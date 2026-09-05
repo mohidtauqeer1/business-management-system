@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePurchaseRequest;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
@@ -20,9 +21,12 @@ class PurchaseController extends Controller
             ->orderBy('name')
             ->get();
 
+        $customers = Customer::orderBy('name')->get();
+
         return view('purchases.create', compact(
             'suppliers',
-            'products'
+            'products',
+            'customers'
         ));
     }
 

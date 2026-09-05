@@ -7,9 +7,15 @@ use App\Models\SaleItem;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use App\Services\StockService;
 
 class SaleService
 {
+    public function __construct(
+    protected StockService $stockService
+) {
+    
+}
     public function createSale(array $data, array $items): Sale
     {
         return DB::transaction(function () use ($data, $items) {
@@ -143,11 +149,17 @@ class SaleService
 
                 SaleItem::create($itemData);
 
-                Product::where('id', $itemData['product_id'])
-                    ->decrement(
-                        'stock_quantity',
-                        $itemData['quantity']
-                    );
+                $product = Product::findOrFail($itemData['product_id']);
+
+                $this->stockService->decrease(
+                    $product,
+                    $itemData['quantity'],
+                    'sale',
+                    Sale::class,
+                    $sale->id,
+                    auth()->id(),
+                    'Stock sold through sale.'
+                );
             }
 
             /*

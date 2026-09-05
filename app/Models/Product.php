@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Category;
 use App\Models\PurchaseItem;
 use App\Models\SaleItem;
+use App\Models\StockMovement;
 
 class Product extends Model
 {
@@ -39,4 +40,9 @@ class Product extends Model
     {
         return $this->hasMany(SaleItem::class);
     }
+
+    public function stockMovements()
+{
+    return $this->hasMany(StockMovement::class);
+}
 }

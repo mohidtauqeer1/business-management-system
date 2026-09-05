@@ -6,9 +6,14 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
+use App\Services\StockService;
 
 class PurchaseService
 {
+    public function __construct(
+    protected StockService $stockService
+) {
+}
     public function createPurchase(array $data, array $items): Purchase
     {
         return DB::transaction(function () use ($data, $items) {
@@ -58,10 +63,15 @@ class PurchaseService
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $product->increment(
-                    'stock_quantity',
-                    $itemData['quantity']
-                );
+                $this->stockService->increase(
+    $product,
+    $itemData['quantity'],
+    'purchase',
+    Purchase::class,
+    $purchase->id,
+    auth()->id(),
+    'Stock received from purchase.'
+);
             }
 
             return $purchase->load([

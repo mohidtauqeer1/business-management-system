@@ -7,7 +7,9 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
-
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\InventoryController;
 // =========================
 // Authentication
 // =========================
@@ -47,6 +49,18 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class);
     });
 
+    Route::middleware('role:admin,manager')->group(function () {
+    Route::resource('suppliers', SupplierController::class);
+    });
+
+Route::middleware('role:admin,manager,cashier')->group(function () {
+    Route::resource('customers', CustomerController::class);
+});
+
+Route::middleware('role:admin,manager')->group(function () {
+    Route::get('/inventory', [InventoryController::class, 'index'])
+        ->name('inventory.index');
+});
     // =========================
     // Purchases
     // Admin + Manager

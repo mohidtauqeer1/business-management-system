@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Create Sale</title>
+    <title>Create Purchase</title>
 </head>
 <body>
 
-<h1>Create Sale</h1>
-
-@if(session('success'))
-    <div>
-        {{ session('success') }}
-    </div>
-@endif
+<h1>Create Purchase</h1>
 
 @if($errors->any())
-    <div>
+    <div style="color: red;">
         <strong>Please fix the following errors:</strong>
 
         <ul>
@@ -25,23 +19,39 @@
     </div>
 @endif
 
-<form method="POST" action="{{ route('sales.store') }}">
+@if(session('error'))
+    <p style="color: red;">
+        {{ session('error') }}
+    </p>
+@endif
+
+<h2>Purchase Information</h2>
+
+<form method="POST" action="{{ route('purchases.store') }}">
 
     @csrf
 
-    <h3>Sale Information</h3>
-
-    {{-- Customer --}}
+    {{-- Supplier --}}
     <div>
-        <label>Customer</label>
+        <label for="supplier_id">
+            Supplier
+        </label>
 
-        <select name="customer_id">
-            <option value="">Walk-in Customer</option>
+        <select name="supplier_id" id="supplier_id" required>
 
-            @foreach($customers as $customer)
-                <option value="{{ $customer->id }}">
-                    {{ $customer->name }} - {{ $customer->phone }}
+            <option value="">
+                Select Supplier
+            </option>
+
+            @foreach($suppliers as $supplier)
+
+                <option
+                    value="{{ $supplier->id }}"
+                    {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}
+                >
+                    {{ $supplier->name }}
                 </option>
+
             @endforeach
 
         </select>
@@ -49,27 +59,33 @@
 
     <br>
 
-    {{-- Sale Date --}}
+    {{-- Purchase Date --}}
     <div>
-        <label>Sale Date</label>
+        <label for="purchase_date">
+            Purchase Date
+        </label>
 
         <input
             type="date"
-            name="sale_date"
-            value="{{ old('sale_date', now()->toDateString()) }}"
+            name="purchase_date"
+            id="purchase_date"
+            value="{{ old('purchase_date', date('Y-m-d')) }}"
             required
         >
     </div>
 
     <br>
 
-    {{-- Invoice --}}
+    {{-- Invoice Number --}}
     <div>
-        <label>Invoice Number</label>
+        <label for="invoice_number">
+            Invoice Number
+        </label>
 
         <input
             type="text"
             name="invoice_number"
+            id="invoice_number"
             value="{{ old('invoice_number') }}"
             required
         >
@@ -77,23 +93,21 @@
 
     <hr>
 
-    <h3>Products</h3>
+    <h2>Products</h2>
 
-    <table border="1" cellpadding="8">
+    <table border="1" cellpadding="10" cellspacing="0">
 
         <thead>
             <tr>
                 <th>Product</th>
-                <th>Available Stock</th>
                 <th>Quantity</th>
                 <th>Unit Price</th>
-                <th>Discount</th>
                 <th>Subtotal</th>
                 <th>Action</th>
             </tr>
         </thead>
 
-        <tbody id="itemsBody">
+        <tbody id="items-container">
 
             <tr class="item-row">
 
@@ -103,25 +117,21 @@
                         class="product"
                         required
                     >
-                        <option value="">Select Product</option>
+
+                        <option value="">
+                            Select Product
+                        </option>
 
                         @foreach($products as $product)
-                            <option
-                                value="{{ $product->id }}"
-                                data-stock="{{ $product->stock_quantity }}"
-                                data-price="{{ $product->selling_price }}"
-                            >
-                                {{ $product->name }} - {{ $product->sku }}
+
+                            <option value="{{ $product->id }}">
+                                {{ $product->name }} -
+                                {{ $product->sku }}
                             </option>
+
                         @endforeach
 
                     </select>
-                </td>
-
-                <td>
-                    <span class="available-stock">
-                        -
-                    </span>
                 </td>
 
                 <td>
@@ -129,9 +139,9 @@
                         type="number"
                         name="items[0][quantity]"
                         class="quantity"
+                        value="1"
                         min="0.01"
                         step="0.01"
-                        value="1"
                         required
                     >
                 </td>
@@ -141,32 +151,27 @@
                         type="number"
                         name="items[0][unit_price]"
                         class="unit-price"
+                        value="0"
                         min="0"
                         step="0.01"
-                        value="0"
                         required
                     >
                 </td>
 
                 <td>
                     <input
-                        type="number"
-                        name="items[0][discount]"
-                        class="item-discount"
-                        min="0"
-                        step="0.01"
-                        value="0"
+                        type="text"
+                        class="subtotal"
+                        value="0.00"
+                        readonly
                     >
                 </td>
 
                 <td>
-                    <span class="subtotal">
-                        0.00
-                    </span>
-                </td>
-
-                <td>
-                    <button type="button" class="remove-row">
+                    <button
+                        type="button"
+                        class="remove-row"
+                    >
                         Remove
                     </button>
                 </td>
@@ -179,299 +184,257 @@
 
     <br>
 
-    <button type="button" id="addRow">
+    <button
+        type="button"
+        id="add-product"
+    >
         + Add Product
     </button>
 
     <hr>
 
-    <h3>Payment</h3>
+    <h2>Payment</h2>
 
-    {{-- Overall Discount --}}
+    {{-- Total --}}
     <div>
-        <label>Overall Discount</label>
+        <strong>
+            Total Amount:
+        </strong>
 
-        <input
-            type="number"
-            name="discount"
-            id="discount"
-            min="0"
-            step="0.01"
-            value="0"
-        >
+        <span id="total-amount">
+            0.00
+        </span>
     </div>
 
     <br>
 
-    {{-- Tax --}}
+    {{-- Paid Amount --}}
     <div>
-        <label>Tax</label>
-
-        <input
-            type="number"
-            name="tax"
-            id="tax"
-            min="0"
-            step="0.01"
-            value="0"
-        >
-    </div>
-
-    <br>
-
-    <p>
-        Items Total:
-        <strong id="itemsTotal">0.00</strong>
-    </p>
-
-    <p>
-        Grand Total:
-        <strong id="grandTotal">0.00</strong>
-    </p>
-
-    <div>
-        <label>Paid Amount</label>
+        <label for="paid_amount">
+            Paid Amount
+        </label>
 
         <input
             type="number"
             name="paid_amount"
-            id="paidAmount"
+            id="paid_amount"
+            value="{{ old('paid_amount', 0) }}"
             min="0"
             step="0.01"
-            value="0"
             required
         >
     </div>
 
     <br>
 
+    {{-- Payment Status --}}
     <div>
-        <label>Payment Method</label>
+        <label for="payment_status">
+            Payment Status
+        </label>
 
-        <select name="payment_method" required>
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="bank_transfer">Bank Transfer</option>
+        <select
+            name="payment_status"
+            id="payment_status"
+            required
+        >
+            <option
+                value="paid"
+                {{ old('payment_status') == 'paid' ? 'selected' : '' }}
+            >
+                Paid
+            </option>
+
+            <option
+                value="partial"
+                {{ old('payment_status') == 'partial' ? 'selected' : '' }}
+            >
+                Partial
+            </option>
+
+            <option
+                value="unpaid"
+                {{ old('payment_status', 'unpaid') == 'unpaid' ? 'selected' : '' }}
+            >
+                Unpaid
+            </option>
         </select>
     </div>
 
     <br>
 
     <button type="submit">
-        Create Sale
+        Create Purchase
     </button>
+
+    <a href="{{ route('purchases.index') }}">
+        Cancel
+    </a>
 
 </form>
 
 
 <script>
 
-let rowIndex = 1;
-
-const itemsBody = document.getElementById('itemsBody');
-const addRowButton = document.getElementById('addRow');
+let itemIndex = 1;
 
 
-// Add product row
-addRowButton.addEventListener('click', function () {
+/*
+|--------------------------------------------------------------------------
+| Calculate Row Subtotal
+|--------------------------------------------------------------------------
+*/
 
-    const row = document.createElement('tr');
+function calculateRow(row) {
 
-    row.classList.add('item-row');
+    const quantity = parseFloat(
+        row.querySelector('.quantity').value
+    ) || 0;
 
-    row.innerHTML = `
-        <td>
-            <select
-                name="items[${rowIndex}][product_id]"
-                class="product"
-                required
-            >
-                <option value="">Select Product</option>
+    const unitPrice = parseFloat(
+        row.querySelector('.unit-price').value
+    ) || 0;
 
-                @foreach($products as $product)
-                    <option
-                        value="{{ $product->id }}"
-                        data-stock="{{ $product->stock_quantity }}"
-                        data-price="{{ $product->selling_price }}"
-                    >
-                        {{ $product->name }} - {{ $product->sku }}
-                    </option>
-                @endforeach
+    const subtotal = quantity * unitPrice;
 
-            </select>
-        </td>
-
-        <td>
-            <span class="available-stock">-</span>
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][quantity]"
-                class="quantity"
-                min="0.01"
-                step="0.01"
-                value="1"
-                required
-            >
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][unit_price]"
-                class="unit-price"
-                min="0"
-                step="0.01"
-                value="0"
-                required
-            >
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][discount]"
-                class="item-discount"
-                min="0"
-                step="0.01"
-                value="0"
-            >
-        </td>
-
-        <td>
-            <span class="subtotal">0.00</span>
-        </td>
-
-        <td>
-            <button type="button" class="remove-row">
-                Remove
-            </button>
-        </td>
-    `;
-
-    itemsBody.appendChild(row);
-
-    rowIndex++;
-
-    calculateTotal();
-});
-
-
-// Product selection
-document.addEventListener('change', function (event) {
-
-    if (event.target.classList.contains('product')) {
-
-        const row = event.target.closest('.item-row');
-
-        const selectedOption =
-            event.target.options[event.target.selectedIndex];
-
-        const stock =
-            selectedOption.dataset.stock;
-
-        const price =
-            selectedOption.dataset.price;
-
-        row.querySelector('.available-stock').textContent =
-            stock || '-';
-
-        if (price) {
-            row.querySelector('.unit-price').value =
-                price;
-        }
-
-        calculateTotal();
-    }
-
-});
-
-
-// Calculate row subtotal
-function calculateRowSubtotal(row)
-{
-    const quantity =
-        parseFloat(row.querySelector('.quantity').value) || 0;
-
-    const unitPrice =
-        parseFloat(row.querySelector('.unit-price').value) || 0;
-
-    const discount =
-        parseFloat(row.querySelector('.item-discount').value) || 0;
-
-    const gross =
-        quantity * unitPrice;
-
-    const subtotal =
-        Math.max(gross - discount, 0);
-
-    row.querySelector('.subtotal').textContent =
+    row.querySelector('.subtotal').value =
         subtotal.toFixed(2);
 
-    return subtotal;
+    calculateTotal();
 }
 
 
-// Calculate totals
-function calculateTotal()
-{
-    let itemsTotal = 0;
+/*
+|--------------------------------------------------------------------------
+| Calculate Total
+|--------------------------------------------------------------------------
+*/
 
-    document.querySelectorAll('.item-row').forEach(function(row) {
+function calculateTotal() {
 
-        itemsTotal += calculateRowSubtotal(row);
+    let total = 0;
 
-    });
+    document
+        .querySelectorAll('.item-row')
+        .forEach(function(row) {
 
-    document.getElementById('itemsTotal').textContent =
-        itemsTotal.toFixed(2);
+            const quantity = parseFloat(
+                row.querySelector('.quantity').value
+            ) || 0;
 
-    const discount =
-        parseFloat(document.getElementById('discount').value) || 0;
+            const unitPrice = parseFloat(
+                row.querySelector('.unit-price').value
+            ) || 0;
 
-    const tax =
-        parseFloat(document.getElementById('tax').value) || 0;
+            total += quantity * unitPrice;
+        });
 
-    const grandTotal =
-        Math.max(itemsTotal - discount + tax, 0);
-
-    document.getElementById('grandTotal').textContent =
-        grandTotal.toFixed(2);
+    document.getElementById('total-amount').textContent =
+        total.toFixed(2);
 }
 
 
-// Input changes
+/*
+|--------------------------------------------------------------------------
+| Quantity / Price Changes
+|--------------------------------------------------------------------------
+*/
+
 document.addEventListener('input', function(event) {
 
     if (
         event.target.classList.contains('quantity') ||
-        event.target.classList.contains('unit-price') ||
-        event.target.classList.contains('item-discount') ||
-        event.target.id === 'discount' ||
-        event.target.id === 'tax'
+        event.target.classList.contains('unit-price')
     ) {
-        calculateTotal();
+
+        const row = event.target.closest('.item-row');
+
+        calculateRow(row);
     }
 
 });
 
 
-// Remove row
+/*
+|--------------------------------------------------------------------------
+| Add Product
+|--------------------------------------------------------------------------
+*/
+
+document
+    .getElementById('add-product')
+    .addEventListener('click', function() {
+
+        const container =
+            document.getElementById('items-container');
+
+        const row =
+            document.querySelector('.item-row').cloneNode(true);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update input names
+        |--------------------------------------------------------------------------
+        */
+
+        row.querySelector('.product').name =
+            `items[${itemIndex}][product_id]`;
+
+        row.querySelector('.quantity').name =
+            `items[${itemIndex}][quantity]`;
+
+        row.querySelector('.unit-price').name =
+            `items[${itemIndex}][unit_price]`;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Reset values
+        |--------------------------------------------------------------------------
+        */
+
+        row.querySelector('.product').value = '';
+
+        row.querySelector('.quantity').value = 1;
+
+        row.querySelector('.unit-price').value = 0;
+
+        row.querySelector('.subtotal').value = '0.00';
+
+        container.appendChild(row);
+
+        itemIndex++;
+    });
+
+
+/*
+|--------------------------------------------------------------------------
+| Remove Product
+|--------------------------------------------------------------------------
+*/
+
 document.addEventListener('click', function(event) {
 
-    if (event.target.classList.contains('remove-row')) {
+    if (
+        event.target.classList.contains('remove-row')
+    ) {
 
         const rows =
             document.querySelectorAll('.item-row');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Don't allow removing the last row
+        |--------------------------------------------------------------------------
+        */
 
         if (rows.length === 1) {
             alert('At least one product is required.');
             return;
         }
 
-        event.target.closest('.item-row').remove();
+        event.target
+            .closest('.item-row')
+            .remove();
 
         calculateTotal();
     }
@@ -479,7 +442,19 @@ document.addEventListener('click', function(event) {
 });
 
 
-calculateTotal();
+/*
+|--------------------------------------------------------------------------
+| Initial Calculation
+|--------------------------------------------------------------------------
+*/
+
+document
+    .querySelectorAll('.item-row')
+    .forEach(function(row) {
+
+        calculateRow(row);
+
+    });
 
 </script>
 
