@@ -40,4 +40,23 @@ class Purchase extends Model
                     ->withPivot('quantity', 'unit_price', 'subtotal')
                     ->withTimestamps();
     }
+
+    public function payments()
+{
+    return $this->hasMany(Payment::class);
+}
+
+public function getPaidAmountAttribute($value)
+{
+    return (float) $value;
+}
+
+public function getOutstandingAmountAttribute()
+{
+    return max(
+        0,
+        (float) $this->total_amount -
+        (float) $this->paid_amount
+    );
+}
 }

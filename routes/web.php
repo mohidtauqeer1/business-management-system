@@ -12,6 +12,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\PaymentController;
 // =========================
 // Authentication
 // =========================
@@ -88,6 +89,25 @@ Route::get('/inventory/low-stock', [
     InventoryController::class,
     'lowStock'
 ])->name('inventory.low-stock');
+
+Route::middleware('role:admin,manager')->group(function () {
+
+    Route::get('/payments', [
+        PaymentController::class,
+        'index'
+    ])->name('payments.index');
+
+    Route::get('/payments/create', [
+        PaymentController::class,
+        'create'
+    ])->name('payments.create');
+
+    Route::post('/payments', [
+        PaymentController::class,
+        'store'
+    ])->name('payments.store');
+
+});
     // =========================
     // Purchases
     // Admin + Manager

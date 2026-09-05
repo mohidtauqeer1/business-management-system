@@ -64,11 +64,12 @@ public function index(): View
 
 public function show(Purchase $purchase): View
 {
-    $purchase->load([
-        'supplier',
-        'user',
-        'items.product'
-    ]);
+  $purchase->load([
+    'supplier',
+    'user',
+    'items.product',
+    'payments.user'
+]);
 
     return view('purchases.show', compact('purchase'));
 }
