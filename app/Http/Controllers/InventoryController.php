@@ -68,4 +68,14 @@ class InventoryController extends Controller
             compact('products', 'categories')
         );
     }
+    public function lowStock(): View
+{
+    $products = Product::with('category')
+        ->whereColumn('stock_quantity', '<=', 'reorder_level')
+        ->where('status', 'active')
+        ->orderBy('stock_quantity')
+        ->get();
+
+    return view('inventory.low-stock', compact('products'));
+}
 }

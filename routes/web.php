@@ -10,6 +10,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\StockMovementController;
 // =========================
 // Authentication
 // =========================
@@ -61,6 +63,31 @@ Route::middleware('role:admin,manager')->group(function () {
     Route::get('/inventory', [InventoryController::class, 'index'])
         ->name('inventory.index');
 });
+
+
+Route::middleware('role:admin,manager')->group(function () {
+
+    Route::get('/inventory/adjustment', [
+        StockAdjustmentController::class,
+        'create'
+    ])->name('inventory.adjustment.create');
+
+    Route::post('/inventory/adjustment', [
+        StockAdjustmentController::class,
+        'store'
+    ])->name('inventory.adjustment.store');
+
+});
+
+Route::get('/inventory/movements', [
+    StockMovementController::class,
+    'index'
+])->name('inventory.movements');
+
+Route::get('/inventory/low-stock', [
+    InventoryController::class,
+    'lowStock'
+])->name('inventory.low-stock');
     // =========================
     // Purchases
     // Admin + Manager
