@@ -15,7 +15,9 @@
         Role: {{ auth()->user()->role }}
     </p>
 
-    <a href="{{ route('payments.index') }}">Payment History</a>
+    <a href="{{ route('payments.index') }}">
+        Payment History
+    </a>
 
     <hr>
 
@@ -34,51 +36,110 @@
         <label>Payment Type:</label>
 
         <select name="type" id="payment_type" required>
-            <option value="">Select Type</option>
+
+            <option value="">
+                Select Type
+            </option>
+
             <option value="supplier_payment">
                 Supplier Payment
             </option>
+
             <option value="customer_payment">
                 Customer Payment
             </option>
+
         </select>
 
         <br><br>
 
-        <div id="supplier_section">
 
-            <label>Supplier:</label>
+        {{-- SUPPLIER PURCHASE --}}
 
-            <select name="supplier_id">
-                <option value="">Select Supplier</option>
+        <div id="supplier_section" style="display:none;">
 
-                @foreach($suppliers as $supplier)
-                    <option value="{{ $supplier->id }}">
-                        {{ $supplier->name }}
+            <label>Purchase:</label>
+
+            <select name="purchase_id">
+
+                <option value="">
+                    Select Purchase
+                </option>
+
+                @foreach($purchases as $purchase)
+
+                    <option value="{{ $purchase->id }}">
+
+                        #{{ $purchase->id }}
+
+                        -
+                        {{ $purchase->supplier->name }}
+
+                        -
+                        Total:
+                        {{ number_format($purchase->total_amount, 2) }}
+
+                        -
+                        Due:
+                        {{ number_format(
+                            $purchase->total_amount - $purchase->paid_amount,
+                            2
+                        ) }}
+
                     </option>
+
                 @endforeach
+
             </select>
 
         </div>
 
-        <div id="customer_section">
 
-            <label>Customer:</label>
+        {{-- CUSTOMER SALE --}}
 
-            <select name="customer_id">
-                <option value="">Select Customer</option>
+        <div id="customer_section" style="display:none;">
 
-                @foreach($customers as $customer)
-                    <option value="{{ $customer->id }}">
-                        {{ $customer->name }}
-                        — Balance: {{ $customer->credit_balance }}
+            <label>Sale:</label>
+
+            <select name="sale_id">
+
+                <option value="">
+                    Select Sale
+                </option>
+
+                @foreach($sales as $sale)
+
+                    <option value="{{ $sale->id }}">
+
+                        #{{ $sale->id }}
+
+                        -
+
+                        {{ $sale->customer?->name ?? 'Walk-in Customer' }}
+
+                        -
+
+                        Total:
+                        {{ number_format($sale->total_amount, 2) }}
+
+                        -
+
+                        Due:
+                        {{ number_format(
+                            $sale->total_amount - $sale->paid_amount,
+                            2
+                        ) }}
+
                     </option>
+
                 @endforeach
+
             </select>
 
         </div>
 
-        <br>
+        <br><br>
+
 
         <label>Amount:</label>
 
@@ -92,16 +153,20 @@
 
         <br><br>
 
+
         <label>Payment Method:</label>
 
         <select name="payment_method" required>
+
             <option value="cash">Cash</option>
             <option value="bank">Bank</option>
             <option value="card">Card</option>
             <option value="online">Online</option>
+
         </select>
 
         <br><br>
+
 
         <label>Reference Number:</label>
 
@@ -112,6 +177,7 @@
         >
 
         <br><br>
+
 
         <label>Notes:</label>
 
@@ -131,28 +197,50 @@
 
     </form>
 
+
     <script>
-        const type = document.getElementById('payment_type');
-        const supplierSection = document.getElementById('supplier_section');
-        const customerSection = document.getElementById('customer_section');
+
+        const type =
+            document.getElementById('payment_type');
+
+        const supplierSection =
+            document.getElementById('supplier_section');
+
+        const customerSection =
+            document.getElementById('customer_section');
+
 
         function updateSections() {
 
             if (type.value === 'supplier_payment') {
+
                 supplierSection.style.display = 'block';
+
                 customerSection.style.display = 'none';
+
             } else if (type.value === 'customer_payment') {
+
                 supplierSection.style.display = 'none';
+
                 customerSection.style.display = 'block';
+
             } else {
+
                 supplierSection.style.display = 'none';
+
                 customerSection.style.display = 'none';
+
             }
         }
 
-        type.addEventListener('change', updateSections);
+
+        type.addEventListener(
+            'change',
+            updateSections
+        );
 
         updateSections();
+
     </script>
 
 </body>
