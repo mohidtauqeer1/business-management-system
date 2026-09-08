@@ -1,343 +1,144 @@
-<!DOCTYPE html>
+@extends('layouts.app')
+@section('title', 'Purchase ' . $purchase->invoice_number)
+@section('page_title', 'Purchase Invoice')
 
-<html>
-<head>
-    <title>Purchase {{ $purchase->invoice_number }}</title>
+@section('content')
 
-```
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-    }
-
-    .invoice {
-        max-width: 900px;
-        margin: auto;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 25px;
-    }
-
-    th,
-    td {
-        border: 1px solid #000;
-        padding: 10px;
-        text-align: left;
-    }
-
-    .totals {
-        width: 350px;
-        margin-left: auto;
-        margin-top: 25px;
-    }
-
-    .totals p {
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .grand-total {
-        font-size: 20px;
-        font-weight: bold;
-    }
-
-    .payment-info {
-        width: 350px;
-        margin-left: auto;
-        margin-top: 35px;
-    }
-
-    .payment-info h3 {
-        margin-bottom: 15px;
-    }
-
-    .payment-info p {
-        display: flex;
-        justify-content: space-between;
-        margin: 8px 0;
-    }
-
-    .payment-history {
-        margin-top: 25px;
-    }
-
-    .actions {
-        margin-bottom: 25px;
-    }
-
-    @media print {
-        .actions {
-            display: none;
-        }
-    }
-</style>
-```
-
-</head>
-
-<body>
-
-<div class="invoice">
-
-```
-<div class="actions">
-
-    <a href="{{ route('purchases.index') }}">
-        ← Back to Purchases
-    </a>
-
-    &nbsp;&nbsp;
-
-    <a href="{{ route('purchases.create') }}">
-        + New Purchase
-    </a>
-
-    &nbsp;&nbsp;
-
-    <button onclick="window.print()">
-        Print Purchase Invoice
-    </button>
-
+<div class="page-header no-print">
+    <div>
+        <div class="page-title">{{ $purchase->invoice_number }}</div>
+        <div class="page-subtitle">Purchase invoice details</div>
+    </div>
+    <div class="page-header-actions d-flex gap-8">
+        <a href="{{ route('returns.purchases.create', $purchase) }}" class="btn btn-warning">🔄 Process Return</a>
+        <a href="{{ route('purchases.pdf', $purchase) }}" class="btn btn-secondary" target="_blank">📄 Download PDF</a>
+        <button onclick="window.print()" class="btn btn-secondary">🖨️ Print</button>
+        <a href="{{ route('purchases.index') }}" class="btn btn-secondary">← Back</a>
+        <a href="{{ route('purchases.create') }}" class="btn btn-primary">+ New Purchase</a>
+    </div>
 </div>
 
-<div class="header">
+<div class="invoice-page">
 
-    <div>
-        <h1>PURCHASE INVOICE</h1>
-
-        <p>
-            <strong>Invoice:</strong>
-            {{ $purchase->invoice_number }}
-        </p>
-
-        <p>
-            <strong>Date:</strong>
-            {{ $purchase->purchase_date }}
-        </p>
+    <div class="invoice-header">
+        <div>
+            <div class="invoice-brand">{{ \App\Models\Setting::get('business_name', 'BizManager') }}</div>
+            <div class="invoice-brand-sub">{{ \App\Models\Setting::get('business_tagline', 'Business Management System') }}</div>
+            <div class="invoice-brand-sub">{{ \App\Models\Setting::get('business_phone') }}</div>
+            <div class="invoice-brand-sub">{{ \App\Models\Setting::get('business_address') }}</div>
+        </div>
+        <div class="invoice-meta">
+            <h2>PURCHASE</h2>
+            <p><strong>Invoice:</strong> {{ $purchase->invoice_number }}</p>
+            <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($purchase->purchase_date)->format('d M Y') }}</p>
+            <p><strong>Recorded By:</strong> {{ $purchase->user?->name ?? '—' }}</p>
+        </div>
     </div>
 
-    <div>
-
-        <p>
-            <strong>Supplier:</strong>
-            {{ $purchase->supplier?->name ?? 'Unknown' }}
-        </p>
-
-        @if($purchase->supplier)
-            <p>
-                <strong>Phone:</strong>
-                {{ $purchase->supplier->phone }}
-            </p>
-        @endif
-
-        <p>
-            <strong>Recorded By:</strong>
-            {{ $purchase->user?->name ?? 'Unknown' }}
-        </p>
-
+    <div class="invoice-parties">
+        <div>
+            <div class="invoice-party-label">From Supplier</div>
+            <div class="invoice-party-name">{{ $purchase->supplier?->name ?? 'Unknown Supplier' }}</div>
+            @if($purchase->supplier?->phone)
+                <div class="invoice-party-detail">📞 {{ $purchase->supplier->phone }}</div>
+            @endif
+            @if($purchase->supplier?->email)
+                <div class="invoice-party-detail">✉️ {{ $purchase->supplier->email }}</div>
+            @endif
+            @if($purchase->supplier?->address)
+                <div class="invoice-party-detail">📍 {{ $purchase->supplier->address }}</div>
+            @endif
+        </div>
+        <div>
+            <div class="invoice-party-label">Payment Summary</div>
+            <div class="invoice-party-name">
+                @if($purchase->payment_status === 'paid')
+                    <span class="badge badge-success">✅ Fully Paid</span>
+                @elseif($purchase->payment_status === 'partial')
+                    <span class="badge badge-warning">⏳ Partially Paid</span>
+                @else
+                    <span class="badge badge-danger">❌ Unpaid</span>
+                @endif
+            </div>
+        </div>
     </div>
 
-</div>
-
-<table>
-
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Product</th>
-            <th>SKU</th>
-            <th>Qty</th>
-            <th>Unit Price</th>
-            <th>Subtotal</th>
-        </tr>
-    </thead>
-
-    <tbody>
-
-        @foreach($purchase->items as $index => $item)
-
-            <tr>
-
-                <td>{{ $index + 1 }}</td>
-
-                <td>
-                    {{ $item->product->name }}
-                </td>
-
-                <td>
-                    {{ $item->product->sku }}
-                </td>
-
-                <td>
-                    {{ $item->quantity }}
-                </td>
-
-                <td>
-                    {{ number_format($item->unit_price, 2) }}
-                </td>
-
-                <td>
-                    {{ number_format($item->subtotal, 2) }}
-                </td>
-
-            </tr>
-
-        @endforeach
-
-    </tbody>
-
-</table>
-
-<div class="totals">
-
-    <p>
-        <span>Items Total:</span>
-
-        <span>
-            {{ number_format($purchase->items->sum('subtotal'), 2) }}
-        </span>
-    </p>
-
-    <p class="grand-total">
-        <span>Total:</span>
-
-        <span>
-            {{ number_format($purchase->total_amount, 2) }}
-        </span>
-    </p>
-
-    <p>
-        <span>Paid:</span>
-
-        <span>
-            {{ number_format($purchase->paid_amount, 2) }}
-        </span>
-    </p>
-
-    <p>
-        <span>Payment Status:</span>
-
-        <strong>
-            {{ ucfirst($purchase->payment_status) }}
-        </strong>
-    </p>
-
-</div>
-
-<!-- Payment Information -->
-
-<div class="payment-info">
-
-    <h3>Payment Information</h3>
-
-    <p>
-        <span>Total:</span>
-
-        <span>
-            {{ number_format($purchase->total_amount, 2) }}
-        </span>
-    </p>
-
-    <p>
-        <span>Paid:</span>
-
-        <span>
-            {{ number_format($purchase->paid_amount, 2) }}
-        </span>
-    </p>
-
-    <p>
-        <span>Outstanding:</span>
-
-        <span>
-            {{ number_format(
-                max(
-                    0,
-                    $purchase->total_amount - $purchase->paid_amount
-                ),
-                2
-            ) }}
-        </span>
-    </p>
-
-    <p>
-        <span>Status:</span>
-
-        <strong>
-            {{ ucfirst($purchase->payment_status) }}
-        </strong>
-    </p>
-
-</div>
-
-@if($purchase->payments->count())
-
-    <div class="payment-history">
-
-        <h4>Payment History</h4>
-
-        <table>
-
+    {{-- Items Table --}}
+    <div class="table-wrapper">
+        <table class="table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Reference</th>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Subtotal</th>
                 </tr>
             </thead>
-
             <tbody>
-
-                @foreach($purchase->payments as $payment)
-
-                    <tr>
-
-                        <td>
-                            {{ $payment->created_at->format('d M Y H:i') }}
-                        </td>
-
-                        <td>
-                            {{ number_format($payment->amount, 2) }}
-                        </td>
-
-                        <td>
-                            {{ ucfirst($payment->payment_method) }}
-                        </td>
-
-                        <td>
-                            {{ $payment->reference_number ?? '-' }}
-                        </td>
-
-                    </tr>
-
+                @foreach($purchase->items as $index => $item)
+                <tr>
+                    <td class="text-muted">{{ $index + 1 }}</td>
+                    <td class="fw-semibold">{{ $item->product->name }}</td>
+                    <td><code style="font-size:11px;background:var(--gray-100);padding:2px 5px;border-radius:3px;">{{ $item->product->sku }}</code></td>
+                    <td class="text-center">{{ $item->quantity }}</td>
+                    <td class="text-right">Rs. {{ number_format($item->unit_price, 2) }}</td>
+                    <td class="text-right fw-semibold">Rs. {{ number_format($item->subtotal, 2) }}</td>
+                </tr>
                 @endforeach
-
             </tbody>
-
         </table>
-
     </div>
 
-@endif
+    <div class="invoice-totals-box">
+        <div class="invoice-totals-row">
+            <span>Items Total</span>
+            <span>Rs. {{ number_format($purchase->items->sum('subtotal'), 2) }}</span>
+        </div>
+        <div class="invoice-totals-row invoice-total-grand">
+            <span>Grand Total</span>
+            <span>Rs. {{ number_format($purchase->total_amount, 2) }}</span>
+        </div>
+        <div class="invoice-totals-row" style="color:var(--success-dark);">
+            <span>Amount Paid</span>
+            <span>Rs. {{ number_format($purchase->paid_amount, 2) }}</span>
+        </div>
+        <div class="invoice-totals-row {{ $purchase->outstanding_amount > 0 ? 'text-danger' : 'text-success' }}">
+            <span>Outstanding</span>
+            <span>Rs. {{ number_format($purchase->outstanding_amount, 2) }}</span>
+        </div>
+    </div>
 
-<br><br>
+    {{-- Payment History --}}
+    @if($purchase->payments->count())
+    <div style="margin-top:32px;">
+        <h4 style="font-size:14px;font-weight:700;color:var(--gray-700);margin-bottom:12px;">Payment History</h4>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Recorded By</th></tr>
+                </thead>
+                <tbody>
+                    @foreach($purchase->payments as $payment)
+                    <tr>
+                        <td>{{ $payment->created_at->format('d M Y H:i') }}</td>
+                        <td class="fw-semibold text-success">Rs. {{ number_format($payment->amount, 2) }}</td>
+                        <td>{{ ucfirst($payment->payment_method) }}</td>
+                        <td class="text-muted">{{ $payment->reference_number ?? '—' }}</td>
+                        <td>{{ $payment->user?->name ?? '—' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
-<p style="text-align:center;">
-    Purchase recorded successfully.
-</p>
-```
+    <div class="invoice-status">
+        <p>Thank you for your business.</p>
+    </div>
 
 </div>
 
-</body>
-</html>
+@endsection

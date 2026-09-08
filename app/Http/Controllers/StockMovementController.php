@@ -24,12 +24,21 @@ class StockMovementController extends Controller
             $query->where('type', $request->type);
         }
 
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
         $movements = $query
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         $products = Product::orderBy('name')->get();
+
 
         return view(
             'inventory.movements',

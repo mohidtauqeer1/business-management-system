@@ -1,4 +1,0 @@
-git status
-
-git commit -m "Describe what you changed"
-git push

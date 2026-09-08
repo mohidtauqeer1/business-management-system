@@ -13,36 +13,48 @@ use App\Models\Purchase;
 use App\Models\Sale;
 class PaymentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $payments = Payment::with([
-            'user',
-            'supplier',
-            'customer',
-        ])
-            ->latest()
-            ->paginate(20);
+        $query = Payment::with(['user', 'purchase.supplier', 'sale.customer'])
+            ->latest();
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('method')) {
+            $query->where('payment_method', $request->method);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $payments = $query->paginate(20)->withQueryString();
 
         return view('payments.index', compact('payments'));
     }
 
     public function create(): View
-{
-    $purchases = Purchase::with('supplier')
-        ->whereColumn('paid_amount', '<', 'total_amount')
-        ->latest()
-        ->get();
+    {
+        $purchases = Purchase::with('supplier')
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->whereIn('payment_status', ['unpaid', 'partial'])
+            ->latest()
+            ->get();
 
-    $sales = Sale::with('customer')
-        ->whereColumn('paid_amount', '<', 'total_amount')
-        ->latest()
-        ->get();
+        $sales = Sale::with('customer')
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->whereIn('payment_status', ['unpaid', 'partial'])
+            ->latest()
+            ->get();
 
-    return view(
-        'payments.create',
-        compact('purchases', 'sales')
-    );
-}
+        return view('payments.create', compact('purchases', 'sales'));
+    }
 
     public function store(
     Request $request,

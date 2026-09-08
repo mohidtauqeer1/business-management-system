@@ -1,114 +1,98 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Manual Stock Adjustment</title>
-</head>
-<body>
+@extends('layouts.app')
+@section('title', 'Stock Adjustment')
+@section('page_title', 'Manual Stock Adjustment')
+@section('content')
 
-    <h1>Business Management System</h1>
+<div class="page-header">
+    <div>
+        <div class="page-title">Manual Stock Adjustment</div>
+        <div class="page-subtitle">Add or remove stock for a product manually</div>
+    </div>
+    <a href="{{ route('inventory.index') }}" class="btn btn-secondary">← Back to Inventory</a>
+</div>
 
-    <h2>Manual Stock Adjustment</h2>
+<div class="card" style="max-width:550px;">
+    <div class="card-header"><span class="card-title">Adjustment Details</span></div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('inventory.adjustment.store') }}">
+            @csrf
 
-    <p>
-        Welcome, {{ auth()->user()->name }}
-        |
-        Role: {{ auth()->user()->role }}
-    </p>
+            <div class="form-group">
+                <label class="form-label">Product *</label>
+                <select name="product_id" class="form-select" required id="product-select">
+                    <option value="">Select a product</option>
+                    @foreach($products as $product)
+                        <option value="{{ $product->id }}"
+                                data-stock="{{ $product->stock_quantity }}"
+                                data-unit="{{ $product->unit }}"
+                                {{ old('product_id') == $product->id ? 'selected' : '' }}>
+                            {{ $product->name }} ({{ $product->sku }}) — Stock: {{ $product->stock_quantity }} {{ $product->unit }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('product_id')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
 
-    <a href="{{ route('inventory.index') }}">Inventory</a>
-    |
-    <a href="{{ route('inventory.movements') }}">Stock History</a>
-    |
-    <a href="{{ route('inventory.low-stock') }}">Low Stock</a>
+            <div class="form-group">
+                <label class="form-label">Current Stock</label>
+                <input type="text" id="current-stock" class="form-control" value="—" readonly
+                       style="background:var(--gray-100);cursor:not-allowed;">
+            </div>
 
-    <hr>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Adjustment Type *</label>
+                    <select name="type" class="form-select" required>
+                        <option value="in"  {{ old('type') === 'in'  ? 'selected' : '' }}>▲ Add Stock (In)</option>
+                        <option value="out" {{ old('type') === 'out' ? 'selected' : '' }}>▼ Remove Stock (Out)</option>
+                    </select>
+                    @error('type')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
 
-    @if(session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+                <div class="form-group">
+                    <label class="form-label">Quantity *</label>
+                    <input type="number" name="quantity" class="form-control"
+                           value="{{ old('quantity') }}" step="0.01" min="0.01" required>
+                    @error('quantity')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+            </div>
 
-    @if($errors->any())
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
+            <div class="form-group">
+                <label class="form-label">Reason *</label>
+                <select name="reason" class="form-select" required>
+                    <option value="manual_adjustment" {{ old('reason', 'manual_adjustment') === 'manual_adjustment' ? 'selected' : '' }}>Manual Adjustment</option>
+                    <option value="damage"            {{ old('reason') === 'damage'            ? 'selected' : '' }}>Damaged Goods</option>
+                    <option value="return"            {{ old('reason') === 'return'            ? 'selected' : '' }}>Return</option>
+                    <option value="correction"        {{ old('reason') === 'correction'        ? 'selected' : '' }}>Inventory Correction</option>
+                    <option value="other"             {{ old('reason') === 'other'             ? 'selected' : '' }}>Other</option>
+                </select>
+            </div>
 
-    <form method="POST" action="{{ route('inventory.adjustment.store') }}">
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3"
+                          placeholder="Optional: explain reason for adjustment…">{{ old('notes') }}</textarea>
+            </div>
 
-        @csrf
+            <div class="divider"></div>
 
-        <div>
-            <label>Product:</label>
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-warning">Apply Adjustment</button>
+                <a href="{{ route('inventory.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
 
-            <select name="product_id" required>
-                <option value="">Select Product</option>
+@endsection
 
-                @foreach($products as $product)
-                    <option value="{{ $product->id }}">
-                        {{ $product->name }}
-                        — Current Stock: {{ $product->stock_quantity }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <br>
-
-        <div>
-            <label>Adjustment Type:</label>
-
-            <select name="type" required>
-                <option value="">Select Type</option>
-                <option value="increase">Increase Stock</option>
-                <option value="decrease">Decrease Stock</option>
-            </select>
-        </div>
-
-        <br>
-
-        <div>
-            <label>Quantity:</label>
-
-            <input
-                type="number"
-                name="quantity"
-                step="0.01"
-                min="0.01"
-                required
-            >
-        </div>
-
-        <br>
-
-        <div>
-            <label>Reason / Notes:</label>
-
-            <br>
-
-            <textarea
-                name="notes"
-                rows="4"
-                cols="50"
-                placeholder="Example: Physical stock count correction"
-            ></textarea>
-        </div>
-
-        <br>
-
-        <button type="submit">
-            Adjust Stock
-        </button>
-
-    </form>
-
-    <br>
-
-    <form action="{{ route('logout') }}" method="POST">
-        @csrf
-        <button type="submit">Logout</button>
-    </form>
-
-</body>
-</html>
+@push('scripts')
+<script>
+document.getElementById('product-select').addEventListener('change', function() {
+    const opt     = this.selectedOptions[0];
+    const stock   = opt?.dataset?.stock ?? '';
+    const unit    = opt?.dataset?.unit  ?? '';
+    document.getElementById('current-stock').value = stock ? stock + ' ' + unit : '—';
+});
+</script>
+@endpush

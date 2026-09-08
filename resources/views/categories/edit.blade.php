@@ -1,85 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Category</title>
-</head>
-<body>
-
-<h1>Edit Category</h1>
-
-@if($errors->any())
-
-    <ul style="color: red;">
-
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-
-    </ul>
-
-@endif
-
-<form
-    action="{{ route('categories.update', $category) }}"
-    method="POST"
->
-
-    @csrf
-    @method('PUT')
-
-    <label>Name</label>
-    <br>
-
-    <input
-        type="text"
-        name="name"
-        value="{{ old('name', $category->name) }}"
-    >
-
-    <br><br>
-
-    <label>Description</label>
-    <br>
-
-    <textarea name="description">{{ old('description', $category->description) }}</textarea>
-
-    <br><br>
-
-    <label>Parent Category</label>
-    <br>
-
-    <select name="parent_id">
-
-        <option value="">
-            None / Root Category
-        </option>
-
-        @foreach($categories as $parent)
-
-            <option
-                value="{{ $parent->id }}"
-                {{ old('parent_id', $category->parent_id) == $parent->id ? 'selected' : '' }}
-            >
-                {{ $parent->name }}
-            </option>
-
-        @endforeach
-
-    </select>
-
-    <br><br>
-
-    <button type="submit">
-        Update Category
-    </button>
-
-</form>
-
-<br>
-
-<a href="{{ route('categories.index') }}">
-    Back to Categories
-</a>
-
-</body>
-</html>
+@extends('layouts.app')
+@section('title', 'Edit Category')
+@section('page_title', 'Edit Category')
+@section('content')
+<div class="page-header">
+    <div class="page-title">Edit: {{ $category->name }}</div>
+    <a href="{{ route('categories.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card" style="max-width:500px;">
+    <div class="card-header"><span class="card-title">Category Information</span></div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('categories.update', $category) }}">
+            @csrf @method('PUT')
+            <div class="form-group">
+                <label class="form-label">Category Name *</label>
+                <input type="text" name="name" class="form-control"
+                       value="{{ old('name', $category->name) }}" required>
+                @error('name')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="3">{{ old('description', $category->description) }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Parent Category</label>
+                <select name="parent_id" class="form-select">
+                    <option value="">None / Root Category</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ old('parent_id', $category->parent_id) == $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="divider"></div>
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-primary">Update Category</button>
+                <a href="{{ route('categories.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection

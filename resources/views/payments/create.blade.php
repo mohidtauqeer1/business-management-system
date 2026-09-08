@@ -1,247 +1,163 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Record Payment</title>
-</head>
-<body>
+@extends('layouts.app')
+@section('title', 'Record Payment')
+@section('page_title', 'Record Payment')
+@section('content')
 
-    <h1>Business Management System</h1>
+<div class="page-header">
+    <div>
+        <div class="page-title">Record Payment</div>
+        <div class="page-subtitle">Record a supplier or customer payment</div>
+    </div>
+    <a href="{{ route('payments.index') }}" class="btn btn-secondary">← Payment History</a>
+</div>
 
-    <h2>Record Payment</h2>
+<div class="card" style="max-width:620px;">
+    <div class="card-header"><span class="card-title">Payment Details</span></div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('payments.store') }}">
+            @csrf
 
-    <p>
-        Welcome, {{ auth()->user()->name }}
-        |
-        Role: {{ auth()->user()->role }}
-    </p>
-
-    <a href="{{ route('payments.index') }}">
-        Payment History
-    </a>
-
-    <hr>
-
-    @if($errors->any())
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
-
-    <form method="POST" action="{{ route('payments.store') }}">
-
-        @csrf
-
-        <label>Payment Type:</label>
-
-        <select name="type" id="payment_type" required>
-
-            <option value="">
-                Select Type
-            </option>
-
-            <option value="supplier_payment">
-                Supplier Payment
-            </option>
-
-            <option value="customer_payment">
-                Customer Payment
-            </option>
-
-        </select>
-
-        <br><br>
-
-
-        {{-- SUPPLIER PURCHASE --}}
-
-        <div id="supplier_section" style="display:none;">
-
-            <label>Purchase:</label>
-
-            <select name="purchase_id">
-
-                <option value="">
-                    Select Purchase
-                </option>
-
-                @foreach($purchases as $purchase)
-
-                    <option value="{{ $purchase->id }}">
-
-                        #{{ $purchase->id }}
-
-                        -
-                        {{ $purchase->supplier->name }}
-
-                        -
-                        Total:
-                        {{ number_format($purchase->total_amount, 2) }}
-
-                        -
-                        Due:
-                        {{ number_format(
-                            $purchase->total_amount - $purchase->paid_amount,
-                            2
-                        ) }}
-
+            <div class="form-group">
+                <label class="form-label">Payment Type *</label>
+                <select name="type" id="payment_type" class="form-select" required>
+                    <option value="">Select payment type…</option>
+                    <option value="supplier_payment" {{ old('type') === 'supplier_payment' ? 'selected' : '' }}>
+                        Supplier Payment (Pay a purchase)
                     </option>
-
-                @endforeach
-
-            </select>
-
-        </div>
-
-
-        {{-- CUSTOMER SALE --}}
-
-        <div id="customer_section" style="display:none;">
-
-            <label>Sale:</label>
-
-            <select name="sale_id">
-
-                <option value="">
-                    Select Sale
-                </option>
-
-                @foreach($sales as $sale)
-
-                    <option value="{{ $sale->id }}">
-
-                        #{{ $sale->id }}
-
-                        -
-
-                        {{ $sale->customer?->name ?? 'Walk-in Customer' }}
-
-                        -
-
-                        Total:
-                        {{ number_format($sale->total_amount, 2) }}
-
-                        -
-
-                        Due:
-                        {{ number_format(
-                            $sale->total_amount - $sale->paid_amount,
-                            2
-                        ) }}
-
+                    <option value="customer_payment" {{ old('type') === 'customer_payment' ? 'selected' : '' }}>
+                        Customer Payment (Receive from customer)
                     </option>
+                </select>
+                @error('type')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
 
-                @endforeach
+            {{-- Supplier Section --}}
+            <div id="supplier_section" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">Purchase Invoice *</label>
+                    <select name="purchase_id" class="form-select">
+                        <option value="">Select purchase…</option>
+                        @foreach($purchases as $purchase)
+                            <option value="{{ $purchase->id }}"
+                                    data-due="{{ max(0, $purchase->total_amount - $purchase->paid_amount) }}"
+                                    {{ old('purchase_id') == $purchase->id ? 'selected' : '' }}>
+                                {{ $purchase->invoice_number }} —
+                                {{ $purchase->supplier->name }} —
+                                Due: Rs. {{ number_format(max(0, $purchase->total_amount - $purchase->paid_amount), 2) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('purchase_id')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+            </div>
 
-            </select>
+            {{-- Customer Section --}}
+            <div id="customer_section" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">Sale Invoice *</label>
+                    <select name="sale_id" class="form-select">
+                        <option value="">Select sale…</option>
+                        @foreach($sales as $sale)
+                            <option value="{{ $sale->id }}"
+                                    data-due="{{ max(0, $sale->total_amount - $sale->paid_amount) }}"
+                                    {{ old('sale_id') == $sale->id ? 'selected' : '' }}>
+                                {{ $sale->invoice_number }} —
+                                {{ $sale->customer?->name ?? 'Walk-in' }} —
+                                Due: Rs. {{ number_format(max(0, $sale->total_amount - $sale->paid_amount), 2) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('sale_id')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+            </div>
 
-        </div>
+            <div id="due-display" style="display:none;background:var(--warning-light);border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span class="fw-semibold" style="color:var(--warning-dark);">Outstanding Amount:</span>
+                    <span class="fw-bold" style="color:var(--warning-dark);font-size:16px;" id="due-amount">Rs. 0.00</span>
+                </div>
+            </div>
 
-        <br><br>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Amount *</label>
+                    <input type="number" name="amount" id="amount" class="form-control"
+                           value="{{ old('amount') }}" step="0.01" min="0.01" required>
+                    @error('amount')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
 
+                <div class="form-group">
+                    <label class="form-label">Payment Method *</label>
+                    <select name="payment_method" class="form-select" required>
+                        <option value="cash"   {{ old('payment_method', 'cash') === 'cash'   ? 'selected' : '' }}>Cash</option>
+                        <option value="bank"   {{ old('payment_method') === 'bank'   ? 'selected' : '' }}>Bank Transfer</option>
+                        <option value="card"   {{ old('payment_method') === 'card'   ? 'selected' : '' }}>Card</option>
+                        <option value="online" {{ old('payment_method') === 'online' ? 'selected' : '' }}>Online</option>
+                    </select>
+                </div>
+            </div>
 
-        <label>Amount:</label>
+            <div class="form-group">
+                <label class="form-label">Reference Number</label>
+                <input type="text" name="reference_number" class="form-control"
+                       value="{{ old('reference_number') }}" placeholder="Cheque/transaction number (optional)">
+            </div>
 
-        <input
-            type="number"
-            name="amount"
-            step="0.01"
-            min="0.01"
-            required
-        >
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3"
+                          placeholder="Optional notes…">{{ old('notes') }}</textarea>
+            </div>
 
-        <br><br>
+            <div class="divider"></div>
+            <button type="submit" class="btn btn-success w-100" style="font-size:15px;padding:12px;">
+                💰 Record Payment
+            </button>
+        </form>
+    </div>
+</div>
 
+@endsection
 
-        <label>Payment Method:</label>
+@push('scripts')
+<script>
+const typeSelect       = document.getElementById('payment_type');
+const supplierSection  = document.getElementById('supplier_section');
+const customerSection  = document.getElementById('customer_section');
+const dueDisplay       = document.getElementById('due-display');
+const dueAmount        = document.getElementById('due-amount');
+const amountInput      = document.getElementById('amount');
 
-        <select name="payment_method" required>
+function updateSections() {
+    const val = typeSelect.value;
+    supplierSection.style.display = val === 'supplier_payment' ? 'block' : 'none';
+    customerSection.style.display = val === 'customer_payment' ? 'block' : 'none';
+    dueDisplay.style.display = 'none';
+}
 
-            <option value="cash">Cash</option>
-            <option value="bank">Bank</option>
-            <option value="card">Card</option>
-            <option value="online">Online</option>
+function updateDue(selectEl) {
+    const opt = selectEl.selectedOptions[0];
+    const due = parseFloat(opt?.dataset?.due || 0);
+    if (opt && opt.value && due > 0) {
+        dueDisplay.style.display = 'block';
+        dueAmount.textContent = 'Rs. ' + due.toFixed(2);
+        amountInput.value = due.toFixed(2);
+    } else {
+        dueDisplay.style.display = 'none';
+    }
+}
 
-        </select>
+typeSelect.addEventListener('change', updateSections);
 
-        <br><br>
+document.querySelector('select[name="purchase_id"]').addEventListener('change', function() {
+    updateDue(this);
+});
+document.querySelector('select[name="sale_id"]').addEventListener('change', function() {
+    updateDue(this);
+});
 
-
-        <label>Reference Number:</label>
-
-        <input
-            type="text"
-            name="reference_number"
-            maxlength="100"
-        >
-
-        <br><br>
-
-
-        <label>Notes:</label>
-
-        <br>
-
-        <textarea
-            name="notes"
-            rows="4"
-            cols="50"
-        ></textarea>
-
-        <br><br>
-
-        <button type="submit">
-            Record Payment
-        </button>
-
-    </form>
-
-
-    <script>
-
-        const type =
-            document.getElementById('payment_type');
-
-        const supplierSection =
-            document.getElementById('supplier_section');
-
-        const customerSection =
-            document.getElementById('customer_section');
-
-
-        function updateSections() {
-
-            if (type.value === 'supplier_payment') {
-
-                supplierSection.style.display = 'block';
-
-                customerSection.style.display = 'none';
-
-            } else if (type.value === 'customer_payment') {
-
-                supplierSection.style.display = 'none';
-
-                customerSection.style.display = 'block';
-
-            } else {
-
-                supplierSection.style.display = 'none';
-
-                customerSection.style.display = 'none';
-
-            }
-        }
-
-
-        type.addEventListener(
-            'change',
-            updateSections
-        );
-
-        updateSections();
-
-    </script>
-
-</body>
-</html>
+// Initialize on load
+updateSections();
+@if(old('type')) typeSelect.dispatchEvent(new Event('change')); @endif
+</script>
+@endpush

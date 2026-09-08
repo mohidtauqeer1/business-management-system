@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Purchase;
-
+use App\Models\Payment;
 class Supplier extends Model
 {
     protected $fillable = [

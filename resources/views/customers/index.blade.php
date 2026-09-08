@@ -1,131 +1,80 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Customers</title>
-</head>
-<body>
+@extends('layouts.app')
+@section('title', 'Customers')
+@section('page_title', 'Customers')
+@section('content')
 
-<h1>Customers</h1>
-
-@if(session('success'))
-    <p style="color: green;">
-        {{ session('success') }}
-    </p>
-@endif
-
-@if(session('error'))
-    <p style="color: red;">
-        {{ session('error') }}
-    </p>
-@endif
-
-<a href="{{ route('customers.create') }}">
-    Add Customer
-</a>
-
-<hr>
+<div class="page-header">
+    <div>
+        <div class="page-title">Customers</div>
+        <div class="page-subtitle">Manage your customer accounts</div>
+    </div>
+    <a href="{{ route('customers.create') }}" class="btn btn-primary">+ Add Customer</a>
+</div>
 
 <form method="GET" action="{{ route('customers.index') }}">
-
-    <input
-        type="text"
-        name="search"
-        placeholder="Search customer..."
-        value="{{ request('search') }}"
-    >
-
-    <button type="submit">
-        Search
-    </button>
-
-    <a href="{{ route('customers.index') }}">
-        Clear
-    </a>
-
+    <div class="filter-bar">
+        <div class="form-group">
+            <label class="form-label">Search</label>
+            <input type="text" name="search" class="form-control" style="min-width:220px;"
+                   placeholder="Name, phone, email…" value="{{ request('search') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">&nbsp;</label>
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="{{ route('customers.index') }}" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </div>
 </form>
 
-<br>
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr><th>#</th><th>Customer Name</th><th>Phone</th><th>Email</th><th>Credit Balance</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                @forelse($customers as $customer)
+                <tr>
+                    <td class="text-muted">{{ $customer->id }}</td>
+                    <td class="fw-semibold">{{ $customer->name }}</td>
+                    <td>{{ $customer->phone ?? '—' }}</td>
+                    <td>{{ $customer->email ?? '—' }}</td>
+                    <td>
+                        @if($customer->credit_balance > 0)
+                            <span class="badge badge-warning">Rs. {{ number_format($customer->credit_balance, 0) }}</span>
+                        @else
+                            <span class="text-muted">Rs. 0</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="d-flex gap-8">
+                            <a href="{{ route('customers.show', $customer) }}" class="btn btn-secondary btn-sm">View</a>
+                            <a href="{{ route('customers.edit', $customer) }}" class="btn btn-primary btn-sm">Edit</a>
+                            <form method="POST" action="{{ route('customers.destroy', $customer) }}"
+                                  onsubmit="return confirm('Delete this customer?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="6">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <div class="empty-state-text">No customers found</div>
+                        <div class="empty-state-sub"><a href="{{ route('customers.create') }}" class="text-primary">Add your first customer</a></div>
+                    </div>
+                </td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($customers->hasPages())
+    <div class="pagination-wrapper">{{ $customers->links() }}</div>
+    @endif
+</div>
 
-<table border="1" cellpadding="10">
-
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Credit Balance</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-
-    <tbody>
-
-        @forelse($customers as $customer)
-
-            <tr>
-                <td>{{ $customer->id }}</td>
-
-                <td>{{ $customer->name }}</td>
-
-                <td>{{ $customer->phone ?? '-' }}</td>
-
-                <td>{{ $customer->email ?? '-' }}</td>
-
-                <td>
-                    {{ number_format($customer->credit_balance, 2) }}
-                </td>
-
-                <td>
-
-                    <a href="{{ route('customers.show', $customer) }}">
-                        View
-                    </a>
-
-                    |
-
-                    <a href="{{ route('customers.edit', $customer) }}">
-                        Edit
-                    </a>
-
-                    |
-
-                    <form
-                        method="POST"
-                        action="{{ route('customers.destroy', $customer) }}"
-                        style="display:inline;"
-                    >
-                        @csrf
-                        @method('DELETE')
-
-                        <button
-                            type="submit"
-                            onclick="return confirm('Delete this customer?')"
-                        >
-                            Delete
-                        </button>
-                    </form>
-
-                </td>
-            </tr>
-
-        @empty
-
-            <tr>
-                <td colspan="6">
-                    No customers found.
-                </td>
-            </tr>
-
-        @endforelse
-
-    </tbody>
-
-</table>
-
-<br>
-
-{{ $customers->links() }}
-
-</body>
-</html>
+@endsection

@@ -1,144 +1,69 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit User</title>
-</head>
-<body>
-
-    <h1>Edit User</h1>
-
-    @if($errors->any())
-        <ul style="color: red;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
-
-    <form
-        action="{{ route('users.update', $user) }}"
-        method="POST"
-    >
-
-        @csrf
-        @method('PUT')
-
-        <label>Name</label>
-        <br>
-
-        <input
-            type="text"
-            name="name"
-            value="{{ old('name', $user->name) }}"
-        >
-
-        <br><br>
-
-        <label>Email</label>
-        <br>
-
-        <input
-            type="email"
-            name="email"
-            value="{{ old('email', $user->email) }}"
-        >
-
-        <br><br>
-
-        <label>Phone</label>
-        <br>
-
-        <input
-            type="text"
-            name="phone"
-            value="{{ old('phone', $user->phone) }}"
-        >
-
-        <br><br>
-
-        <label>Role</label>
-        <br>
-
-        <select name="role">
-
-            <option value="admin"
-                {{ $user->role === 'admin' ? 'selected' : '' }}>
-                Admin
-            </option>
-
-            <option value="manager"
-                {{ $user->role === 'manager' ? 'selected' : '' }}>
-                Manager
-            </option>
-
-            <option value="cashier"
-                {{ $user->role === 'cashier' ? 'selected' : '' }}>
-                Cashier
-            </option>
-
-            <option value="staff"
-                {{ $user->role === 'staff' ? 'selected' : '' }}>
-                Staff
-            </option>
-
-        </select>
-
-        <br><br>
-
-        <label>Status</label>
-        <br>
-
-        <select name="status">
-
-            <option value="active"
-                {{ $user->status === 'active' ? 'selected' : '' }}>
-                Active
-            </option>
-
-            <option value="inactive"
-                {{ $user->status === 'inactive' ? 'selected' : '' }}>
-                Inactive
-            </option>
-
-        </select>
-
-        <br><br>
-
-        <label>
-            New Password
-            <small>(leave empty to keep current password)</small>
-        </label>
-
-        <br>
-
-        <input
-            type="password"
-            name="password"
-        >
-
-        <br><br>
-
-        <label>Confirm New Password</label>
-        <br>
-
-        <input
-            type="password"
-            name="password_confirmation"
-        >
-
-        <br><br>
-
-        <button type="submit">
-            Update User
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="{{ route('users.index') }}">
-        Back to Users
-    </a>
-
-</body>
-</html>
+@extends('layouts.app')
+@section('title', 'Edit User')
+@section('page_title', 'Edit User')
+@section('content')
+<div class="page-header">
+    <div class="page-title">Edit: {{ $user->name }}</div>
+    <a href="{{ route('users.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card" style="max-width:600px;">
+    <div class="card-header"><span class="card-title">User Information</span></div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('users.update', $user) }}">
+            @csrf @method('PUT')
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="name" class="form-control"
+                           value="{{ old('name', $user->name) }}" required>
+                    @error('name')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ old('phone', $user->phone) }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" name="email" class="form-control"
+                       value="{{ old('email', $user->email) }}" required>
+                @error('email')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">New Password <span class="text-muted">(leave blank to keep)</span></label>
+                    <input type="password" name="password" class="form-control">
+                    @error('password')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" name="password_confirmation" class="form-control">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Role *</label>
+                    <select name="role" class="form-select" required>
+                        <option value="admin"   {{ old('role', $user->role) === 'admin'   ? 'selected' : '' }}>Admin</option>
+                        <option value="manager" {{ old('role', $user->role) === 'manager' ? 'selected' : '' }}>Manager</option>
+                        <option value="cashier" {{ old('role', $user->role) === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        <option value="staff"   {{ old('role', $user->role) === 'staff'   ? 'selected' : '' }}>Staff</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="active"   {{ old('status', $user->status) === 'active'   ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ old('status', $user->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-primary">Update User</button>
+                <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection

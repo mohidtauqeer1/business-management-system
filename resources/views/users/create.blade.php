@@ -1,105 +1,69 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create User</title>
-</head>
-<body>
-
-    <h1>Create User</h1>
-
-    @if($errors->any())
-        <ul style="color: red;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
-
-    <form action="{{ route('users.store') }}" method="POST">
-
-        @csrf
-
-        <label>Name</label>
-        <br>
-        <input
-            type="text"
-            name="name"
-            value="{{ old('name') }}"
-        >
-
-        <br><br>
-
-        <label>Email</label>
-        <br>
-        <input
-            type="email"
-            name="email"
-            value="{{ old('email') }}"
-        >
-
-        <br><br>
-
-        <label>Phone</label>
-        <br>
-        <input
-            type="text"
-            name="phone"
-            value="{{ old('phone') }}"
-        >
-
-        <br><br>
-
-        <label>Password</label>
-        <br>
-        <input
-            type="password"
-            name="password"
-        >
-
-        <br><br>
-
-        <label>Confirm Password</label>
-        <br>
-        <input
-            type="password"
-            name="password_confirmation"
-        >
-
-        <br><br>
-
-        <label>Role</label>
-        <br>
-
-        <select name="role">
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="cashier">Cashier</option>
-            <option value="staff">Staff</option>
-        </select>
-
-        <br><br>
-
-        <label>Status</label>
-        <br>
-
-        <select name="status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-        </select>
-
-        <br><br>
-
-        <button type="submit">
-            Create User
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="{{ route('users.index') }}">
-        Back to Users
-    </a>
-
-</body>
-</html>
+@extends('layouts.app')
+@section('title', 'Add User')
+@section('page_title', 'Add User')
+@section('content')
+<div class="page-header">
+    <div class="page-title">Add New User</div>
+    <a href="{{ route('users.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card" style="max-width:600px;">
+    <div class="card-header"><span class="card-title">User Information</span></div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('users.store') }}">
+            @csrf
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="name" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
+                           value="{{ old('name') }}" required>
+                    @error('name')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ old('phone') }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" name="email" class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                       value="{{ old('email') }}" required>
+                @error('email')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <input type="password" name="password" class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" required>
+                    @error('password')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password *</label>
+                    <input type="password" name="password_confirmation" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Role *</label>
+                    <select name="role" class="form-select" required>
+                        <option value="admin"   {{ old('role') === 'admin'   ? 'selected' : '' }}>Admin</option>
+                        <option value="manager" {{ old('role', 'manager') === 'manager' ? 'selected' : '' }}>Manager</option>
+                        <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        <option value="staff"   {{ old('role') === 'staff'   ? 'selected' : '' }}>Staff</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="active"   {{ old('status', 'active') === 'active'   ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-primary">Create User</button>
+                <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection

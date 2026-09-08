@@ -1,487 +1,250 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Sale</title>
-</head>
-<body>
+@extends('layouts.app')
+@section('title', 'New Sale')
+@section('page_title', 'Create Sale')
+@section('breadcrumb')
+    <a href="{{ route('sales.index') }}">Sales</a> › New Sale
+@endsection
 
-<h1>Create Sale</h1>
+@section('content')
 
-@if(session('success'))
+<div class="page-header">
     <div>
-        {{ session('success') }}
+        <div class="page-title">New Sale</div>
+        <div class="page-subtitle">Create a new sales transaction</div>
     </div>
-@endif
+    <a href="{{ route('sales.index') }}" class="btn btn-secondary">← Back to Sales</a>
+</div>
 
-@if($errors->any())
+<form method="POST" action="{{ route('sales.store') }}" id="sale-form">
+@csrf
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+
+    {{-- Left: Items --}}
     <div>
-        <strong>Please fix the following errors:</strong>
-
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<form method="POST" action="{{ route('sales.store') }}">
-
-    @csrf
-
-    <h3>Sale Information</h3>
-
-    {{-- Customer --}}
-    <div>
-        <label>Customer</label>
-
-        <select name="customer_id">
-            <option value="">Walk-in Customer</option>
-
-            @foreach($customers as $customer)
-                <option value="{{ $customer->id }}">
-                    {{ $customer->name }} - {{ $customer->phone }}
-                </option>
-            @endforeach
-
-        </select>
-    </div>
-
-    <br>
-
-    {{-- Sale Date --}}
-    <div>
-        <label>Sale Date</label>
-
-        <input
-            type="date"
-            name="sale_date"
-            value="{{ old('sale_date', now()->toDateString()) }}"
-            required
-        >
-    </div>
-
-    <br>
-
-    {{-- Invoice --}}
-    <div>
-        <label>Invoice Number</label>
-
-        <input
-            type="text"
-            name="invoice_number"
-            value="{{ old('invoice_number') }}"
-            required
-        >
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+                <span class="card-title">Sale Items</span>
+                <button type="button" id="add-product" class="btn btn-primary btn-sm">+ Add Row</button>
+            </div>
+            <div class="card-body" style="padding:12px;">
+                <div id="items-container">
+                    <div class="item-row" style="display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;margin-bottom:8px;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Product</label>
+                            <select name="items[0][product_id]" class="form-select product" required>
+                                <option value="">Select Product</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product->id }}" data-price="{{ $product->selling_price }}" data-stock="{{ $product->stock_quantity }}">
+                                        {{ $product->name }} (Stock: {{ $product->stock_quantity }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Qty</label>
+                            <input type="number" name="items[0][quantity]" class="form-control quantity" value="1" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Unit Price</label>
+                            <input type="number" name="items[0][unit_price]" class="form-control unit-price" value="0" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Discount</label>
+                            <input type="number" name="items[0][discount]" class="form-control item-discount" value="0" min="0" step="0.01">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Subtotal</label>
+                            <input type="text" class="form-control subtotal" value="0.00" readonly style="background:var(--gray-100);">
+                        </div>
+                        <div>
+                            <label class="form-label" style="visibility:hidden;">X</label>
+                            <button type="button" class="remove-item-btn" title="Remove">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <hr>
-
-    <h3>Products</h3>
-
-    <table border="1" cellpadding="8">
-
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Available Stock</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Discount</th>
-                <th>Subtotal</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-
-        <tbody id="itemsBody">
-
-            <tr class="item-row">
-
-                <td>
-                    <select
-                        name="items[0][product_id]"
-                        class="product"
-                        required
-                    >
-                        <option value="">Select Product</option>
-
-                        @foreach($products as $product)
-                            <option
-                                value="{{ $product->id }}"
-                                data-stock="{{ $product->stock_quantity }}"
-                                data-price="{{ $product->selling_price }}"
-                            >
-                                {{ $product->name }} - {{ $product->sku }}
+    {{-- Right: Header & Payment --}}
+    <div>
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><span class="card-title">Sale Info</span></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Customer</label>
+                    <select name="customer_id" class="form-select">
+                        <option value="">Walk-in Customer</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
+                                {{ $customer->name }}
                             </option>
                         @endforeach
-
                     </select>
-                </td>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Invoice Number *</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" name="invoice_number" class="form-control"
+                               value="{{ old('invoice_number', $nextInvoiceNumber) }}" required
+                               style="font-family:monospace;font-weight:600;letter-spacing:0.5px;">
+                        <span style="font-size:11px;color:var(--gray-400);white-space:nowrap;">Auto-generated</span>
+                    </div>
+                    @error('invoice_number')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sale Date *</label>
+                    <input type="date" name="sale_date" class="form-control"
+                           value="{{ old('sale_date', date('Y-m-d')) }}" required>
+                </div>
+            </div>
+        </div>
 
-                <td>
-                    <span class="available-stock">
-                        -
-                    </span>
-                </td>
+        <div class="card">
+            <div class="card-header"><span class="card-title">Payment</span></div>
+            <div class="card-body">
+                <div style="background:var(--gray-50);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                        <span>Items Total:</span>
+                        <span id="items-total">Rs. 0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                        <span>Overall Discount:</span>
+                        <span id="display-discount">Rs. 0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                        <span>Tax:</span>
+                        <span id="display-tax">Rs. 0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:1px solid var(--gray-200);margin-top:4px;font-weight:700;font-size:15px;">
+                        <span>Grand Total:</span>
+                        <span id="total-amount">Rs. 0.00</span>
+                    </div>
+                </div>
 
-                <td>
-                    <input
-                        type="number"
-                        name="items[0][quantity]"
-                        class="quantity"
-                        min="0.01"
-                        step="0.01"
-                        value="1"
-                        required
-                    >
-                </td>
+                <div class="form-group">
+                    <label class="form-label">Overall Discount (Rs.)</label>
+                    <input type="number" name="discount" id="discount" class="form-control"
+                           value="{{ old('discount', 0) }}" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tax (Rs.)</label>
+                    <input type="number" name="tax" id="tax" class="form-control"
+                           value="{{ old('tax', 0) }}" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    <select name="payment_method" class="form-select">
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="card">Card</option>
+                        <option value="online">Online</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Paid Amount</label>
+                    <input type="number" name="paid_amount" id="paid_amount" class="form-control"
+                           value="{{ old('paid_amount', 0) }}" min="0" step="0.01">
+                </div>
 
-                <td>
-                    <input
-                        type="number"
-                        name="items[0][unit_price]"
-                        class="unit-price"
-                        min="0"
-                        step="0.01"
-                        value="0"
-                        required
-                    >
-                </td>
-
-                <td>
-                    <input
-                        type="number"
-                        name="items[0][discount]"
-                        class="item-discount"
-                        min="0"
-                        step="0.01"
-                        value="0"
-                    >
-                </td>
-
-                <td>
-                    <span class="subtotal">
-                        0.00
-                    </span>
-                </td>
-
-                <td>
-                    <button type="button" class="remove-row">
-                        Remove
-                    </button>
-                </td>
-
-            </tr>
-
-        </tbody>
-
-    </table>
-
-    <br>
-
-    <button type="button" id="addRow">
-        + Add Product
-    </button>
-
-    <hr>
-
-    <h3>Payment</h3>
-
-    {{-- Overall Discount --}}
-    <div>
-        <label>Overall Discount</label>
-
-        <input
-            type="number"
-            name="discount"
-            id="discount"
-            min="0"
-            step="0.01"
-            value="0"
-        >
+                <div class="divider"></div>
+                <button type="submit" class="btn btn-primary w-100">Save Sale</button>
+            </div>
+        </div>
     </div>
 
-    <br>
-
-    {{-- Tax --}}
-    <div>
-        <label>Tax</label>
-
-        <input
-            type="number"
-            name="tax"
-            id="tax"
-            min="0"
-            step="0.01"
-            value="0"
-        >
-    </div>
-
-    <br>
-
-    <p>
-        Items Total:
-        <strong id="itemsTotal">0.00</strong>
-    </p>
-
-    <p>
-        Grand Total:
-        <strong id="grandTotal">0.00</strong>
-    </p>
-
-    <div>
-        <label>Paid Amount</label>
-
-        <input
-            type="number"
-            name="paid_amount"
-            id="paidAmount"
-            min="0"
-            step="0.01"
-            value="0"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label>Payment Method</label>
-
-        <select name="payment_method" required>
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="bank_transfer">Bank Transfer</option>
-        </select>
-    </div>
-
-    <br>
-
-    <button type="submit">
-        Create Sale
-    </button>
-
+</div>
 </form>
 
+@endsection
 
+@push('scripts')
 <script>
+let itemIndex = 1;
 
-let rowIndex = 1;
+function getProductsData() {
+    return @json($products->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ' (Stock: ' . $p->stock_quantity . ')', 'price' => $p->selling_price]));
+}
 
-const itemsBody = document.getElementById('itemsBody');
-const addRowButton = document.getElementById('addRow');
-
-
-// Add product row
-addRowButton.addEventListener('click', function () {
-
-    const row = document.createElement('tr');
-
-    row.classList.add('item-row');
-
-    row.innerHTML = `
-        <td>
-            <select
-                name="items[${rowIndex}][product_id]"
-                class="product"
-                required
-            >
-                <option value="">Select Product</option>
-
-                @foreach($products as $product)
-                    <option
-                        value="{{ $product->id }}"
-                        data-stock="{{ $product->stock_quantity }}"
-                        data-price="{{ $product->selling_price }}"
-                    >
-                        {{ $product->name }} - {{ $product->sku }}
-                    </option>
-                @endforeach
-
-            </select>
-        </td>
-
-        <td>
-            <span class="available-stock">-</span>
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][quantity]"
-                class="quantity"
-                min="0.01"
-                step="0.01"
-                value="1"
-                required
-            >
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][unit_price]"
-                class="unit-price"
-                min="0"
-                step="0.01"
-                value="0"
-                required
-            >
-        </td>
-
-        <td>
-            <input
-                type="number"
-                name="items[${rowIndex}][discount]"
-                class="item-discount"
-                min="0"
-                step="0.01"
-                value="0"
-            >
-        </td>
-
-        <td>
-            <span class="subtotal">0.00</span>
-        </td>
-
-        <td>
-            <button type="button" class="remove-row">
-                Remove
-            </button>
-        </td>
-    `;
-
-    itemsBody.appendChild(row);
-
-    rowIndex++;
-
+function calculateRow(row) {
+    const qty      = parseFloat(row.querySelector('.quantity').value)       || 0;
+    const price    = parseFloat(row.querySelector('.unit-price').value)     || 0;
+    const discount = parseFloat(row.querySelector('.item-discount').value)  || 0;
+    const sub      = Math.max(0, (qty * price) - discount);
+    row.querySelector('.subtotal').value = sub.toFixed(2);
     calculateTotal();
-});
-
-
-// Product selection
-document.addEventListener('change', function (event) {
-
-    if (event.target.classList.contains('product')) {
-
-        const row = event.target.closest('.item-row');
-
-        const selectedOption =
-            event.target.options[event.target.selectedIndex];
-
-        const stock =
-            selectedOption.dataset.stock;
-
-        const price =
-            selectedOption.dataset.price;
-
-        row.querySelector('.available-stock').textContent =
-            stock || '-';
-
-        if (price) {
-            row.querySelector('.unit-price').value =
-                price;
-        }
-
-        calculateTotal();
-    }
-
-});
-
-
-// Calculate row subtotal
-function calculateRowSubtotal(row)
-{
-    const quantity =
-        parseFloat(row.querySelector('.quantity').value) || 0;
-
-    const unitPrice =
-        parseFloat(row.querySelector('.unit-price').value) || 0;
-
-    const discount =
-        parseFloat(row.querySelector('.item-discount').value) || 0;
-
-    const gross =
-        quantity * unitPrice;
-
-    const subtotal =
-        Math.max(gross - discount, 0);
-
-    row.querySelector('.subtotal').textContent =
-        subtotal.toFixed(2);
-
-    return subtotal;
 }
 
-
-// Calculate totals
-function calculateTotal()
-{
+function calculateTotal() {
     let itemsTotal = 0;
-
-    document.querySelectorAll('.item-row').forEach(function(row) {
-
-        itemsTotal += calculateRowSubtotal(row);
-
+    document.querySelectorAll('.item-row').forEach(row => {
+        itemsTotal += parseFloat(row.querySelector('.subtotal').value) || 0;
     });
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    const tax      = parseFloat(document.getElementById('tax').value)      || 0;
+    const total    = Math.max(0, itemsTotal - discount) + tax;
 
-    document.getElementById('itemsTotal').textContent =
-        itemsTotal.toFixed(2);
-
-    const discount =
-        parseFloat(document.getElementById('discount').value) || 0;
-
-    const tax =
-        parseFloat(document.getElementById('tax').value) || 0;
-
-    const grandTotal =
-        Math.max(itemsTotal - discount + tax, 0);
-
-    document.getElementById('grandTotal').textContent =
-        grandTotal.toFixed(2);
+    document.getElementById('items-total').textContent    = 'Rs. ' + itemsTotal.toFixed(2);
+    document.getElementById('display-discount').textContent = 'Rs. ' + discount.toFixed(2);
+    document.getElementById('display-tax').textContent    = 'Rs. ' + tax.toFixed(2);
+    document.getElementById('total-amount').textContent   = 'Rs. ' + total.toFixed(2);
 }
 
+function makeRow(index) {
+    const pData = getProductsData();
+    let opts = '<option value="">Select Product</option>';
+    pData.forEach(p => { opts += `<option value="${p.id}" data-price="${p.price}">${p.name}</option>`; });
 
-// Input changes
-document.addEventListener('input', function(event) {
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:12px;margin-bottom:8px;';
+    div.innerHTML = `
+        <div class="form-group" style="margin:0;"><label class="form-label">Product</label>
+            <select name="items[${index}][product_id]" class="form-select product" required>${opts}</select></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Qty</label>
+            <input type="number" name="items[${index}][quantity]" class="form-control quantity" value="1" min="0.01" step="0.01" required></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Unit Price</label>
+            <input type="number" name="items[${index}][unit_price]" class="form-control unit-price" value="0" min="0" step="0.01" required></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Discount</label>
+            <input type="number" name="items[${index}][discount]" class="form-control item-discount" value="0" min="0" step="0.01"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Subtotal</label>
+            <input type="text" class="form-control subtotal" value="0.00" readonly style="background:var(--gray-100);"></div>
+        <div><label class="form-label" style="visibility:hidden;">X</label>
+            <button type="button" class="remove-item-btn" title="Remove">✕</button></div>`;
+    return div;
+}
 
-    if (
-        event.target.classList.contains('quantity') ||
-        event.target.classList.contains('unit-price') ||
-        event.target.classList.contains('item-discount') ||
-        event.target.id === 'discount' ||
-        event.target.id === 'tax'
-    ) {
-        calculateTotal();
-    }
-
+document.getElementById('add-product').addEventListener('click', () => {
+    document.getElementById('items-container').appendChild(makeRow(itemIndex++));
 });
 
+document.addEventListener('change', e => {
+    if (e.target.classList.contains('product')) {
+        const row   = e.target.closest('.item-row');
+        const price = e.target.selectedOptions[0]?.dataset?.price || 0;
+        row.querySelector('.unit-price').value = price;
+        calculateRow(row);
+    }
+});
 
-// Remove row
-document.addEventListener('click', function(event) {
+document.addEventListener('input', e => {
+    if (['quantity','unit-price','item-discount'].some(c => e.target.classList.contains(c))) {
+        calculateRow(e.target.closest('.item-row'));
+    }
+    if (e.target.id === 'discount' || e.target.id === 'tax') calculateTotal();
+});
 
-    if (event.target.classList.contains('remove-row')) {
-
-        const rows =
-            document.querySelectorAll('.item-row');
-
-        if (rows.length === 1) {
-            alert('At least one product is required.');
-            return;
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('remove-item-btn')) {
+        if (document.querySelectorAll('.item-row').length === 1) {
+            alert('At least one product is required.'); return;
         }
-
-        event.target.closest('.item-row').remove();
-
+        e.target.closest('.item-row').remove();
         calculateTotal();
     }
-
 });
 
-
-calculateTotal();
-
+document.querySelectorAll('.item-row').forEach(row => calculateRow(row));
 </script>
-
-</body>
-</html>
+@endpush

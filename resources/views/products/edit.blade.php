@@ -1,151 +1,106 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Product</title>
-</head>
-<body>
+@extends('layouts.app')
 
-<h1>Edit Product</h1>
+@section('title', 'Edit Product')
+@section('page_title', 'Edit Product')
+@section('breadcrumb')
+    <a href="{{ route('products.index') }}">Products</a> › Edit
+@endsection
 
-@if($errors->any())
-    <ul style="color:red;">
-        @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-@endif
+@section('content')
 
-<form method="POST" action="{{ route('products.update', $product) }}">
-
-    @csrf
-    @method('PUT')
+<div class="page-header">
     <div>
-        <label>Product Name</label>
-        <input
-            type="text"
-            name="name"
-            value="{{ old('name', $product->name) }}"
-            required
-        >
+        <div class="page-title">Edit: {{ $product->name }}</div>
+        <div class="page-subtitle">SKU: {{ $product->sku }}</div>
     </div>
+    <a href="{{ route('products.index') }}" class="btn btn-secondary">← Back to Products</a>
+</div>
 
-    <br>
-
-    <div>
-        <label>SKU</label>
-        <input
-            type="text"
-            name="sku"
-            value="{{ old('sku', $product->sku) }}"
-            required
-        >
+<div class="card" style="max-width:700px;">
+    <div class="card-header">
+        <span class="card-title">Product Information</span>
     </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('products.update', $product) }}">
+            @csrf @method('PUT')
 
-    <br>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Product Name *</label>
+                    <input type="text" name="name" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
+                           value="{{ old('name', $product->name) }}" required>
+                    @error('name')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">SKU *</label>
+                    <input type="text" name="sku" class="form-control {{ $errors->has('sku') ? 'is-invalid' : '' }}"
+                           value="{{ old('sku', $product->sku) }}" required>
+                    @error('sku')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+            </div>
 
-    <div>
-        <label>Category</label>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select name="category_id" class="form-select">
+                        <option value="">No Category</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}" {{ old('category_id', $product->category_id) == $cat->id ? 'selected' : '' }}>
+                                {{ $cat->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit *</label>
+                    <input type="text" name="unit" class="form-control"
+                           value="{{ old('unit', $product->unit) }}" required>
+                </div>
+            </div>
 
-        <select name="category_id">
-            <option value="">Select Category</option>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Purchase Price (Rs.) *</label>
+                    <input type="number" name="purchase_price" class="form-control"
+                           value="{{ old('purchase_price', $product->purchase_price) }}" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Selling Price (Rs.) *</label>
+                    <input type="number" name="selling_price" class="form-control"
+                           value="{{ old('selling_price', $product->selling_price) }}" step="0.01" min="0" required>
+                </div>
+            </div>
 
-            @foreach($categories as $category)
-                <option value="{{ $category->id }}"
-    {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-    {{ $category->name }}
-</option>
-            @endforeach
-        </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Stock Quantity</label>
+                    <input type="number" name="stock_quantity" class="form-control"
+                           value="{{ old('stock_quantity', $product->stock_quantity) }}" step="0.01" min="0" required>
+                    <div class="form-hint">Use Stock Adjustment for inventory changes</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reorder Level *</label>
+                    <input type="number" name="reorder_level" class="form-control"
+                           value="{{ old('reorder_level', $product->reorder_level) }}" step="0.01" min="0" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Status *</label>
+                <select name="status" class="form-select">
+                    <option value="active"       {{ old('status', $product->status) === 'active'       ? 'selected' : '' }}>Active</option>
+                    <option value="discontinued" {{ old('status', $product->status) === 'discontinued' ? 'selected' : '' }}>Discontinued</option>
+                </select>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="d-flex gap-8">
+                <button type="submit" class="btn btn-primary">Update Product</button>
+                <a href="{{ route('products.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
     </div>
+</div>
 
-    <br>
-
-    <div>
-        <label>Purchase Price</label>
-        <input
-            type="number"
-            step="0.01"
-            name="purchase_price"
-            value="{{ old('purchase_price', $product->purchase_price) }}"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label>Selling Price</label>
-        <input
-            type="number"
-            step="0.01"
-            name="selling_price"
-            value="{{ old('selling_price', $product->selling_price) }}"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label>Opening Stock</label>
-        <input
-            type="number"
-            step="0.01"
-            name="stock_quantity"
-            value="{{ old('stock_quantity', $product->stock_quantity) }}"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label>Unit</label>
-
-        <select name="unit">
-            <option value="pcs">Pieces</option>
-            <option value="kg">KG</option>
-            <option value="box">Box</option>
-            <option value="liter">Liter</option>
-            <option value="meter">Meter</option>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label>Reorder Level</label>
-        <input
-            type="number"
-            step="0.01"
-            name="reorder_level"
-            value="{{ old('reorder_level', 0) }}"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label>Status</label>
-
-        <select name="status">
-            <option value="active">Active</option>
-            <option value="discontinued">Discontinued</option>
-        </select>
-    </div>
-
-    <br>
-
-    <button type="submit">
-    Update Product
-</button>
-
-    <a href="{{ route('products.index') }}">
-        Cancel
-    </a>
-
-</form>
-
-</body>
-</html>
+@endsection

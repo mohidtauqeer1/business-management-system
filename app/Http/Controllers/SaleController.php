@@ -7,24 +7,23 @@ use App\Models\Sale;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Services\SaleService;
+use App\Services\InvoiceNumberService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+
 
 
 class SaleController extends Controller
 {
-    public function create(): View
+    public function create(InvoiceNumberService $invoiceNumbers): View
     {
         $customers = Customer::orderBy('name')->get();
+        $products  = Product::where('status', 'active')->orderBy('name')->get();
+        $nextInvoiceNumber = $invoiceNumbers->nextSale();
 
-        $products = Product::where('status', 'active')
-            ->orderBy('name')
-            ->get();
-
-        return view('sales.create', compact(
-            'customers',
-            'products'
-        ));
+        return view('sales.create', compact('customers', 'products', 'nextInvoiceNumber'));
     }
 
     public function store(
@@ -53,15 +52,17 @@ class SaleController extends Controller
 
     return view('sales.index', compact('sales'));
 }
-public function show(Sale $sale): View
-{
-   $sale->load([
-    'customer',
-    'user',
-    'items.product',
-    'payments.user'
-]);
+    public function show(Sale $sale): View
+    {
+        $sale->load(['customer', 'user', 'items.product', 'payments.user']);
+        return view('sales.show', compact('sale'));
+    }
 
-    return view('sales.show', compact('sale'));
-}
+    public function downloadPdf(Sale $sale): Response
+    {
+        $sale->load(['customer', 'user', 'items.product']);
+        $pdf = Pdf::loadView('pdf.sale-invoice', compact('sale'))
+            ->setPaper('a4', 'portrait');
+        return $pdf->download("sale-{$sale->invoice_number}.pdf");
+    }
 }
