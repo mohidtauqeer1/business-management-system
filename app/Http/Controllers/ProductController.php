@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -62,6 +63,22 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (!$request->has('reorder_level') && $request->has('low_stock_threshold')) {
+            $request->merge(['reorder_level' => $request->input('low_stock_threshold')]);
+        }
+
+        if (!$request->has('status')) {
+            if ($request->has('is_active')) {
+                $request->merge(['status' => $request->boolean('is_active') ? 'active' : 'discontinued']);
+            } else {
+                $request->merge(['status' => 'active']);
+            }
+        }
+
+        if (!$request->has('purchase_price') && $request->has('cost_price')) {
+            $request->merge(['purchase_price' => $request->input('cost_price')]);
+        }
+
         $validated = $request->validate([
             'category_id' => [
                 'nullable',
@@ -117,7 +134,9 @@ class ProductController extends Controller
             ],
         ]);
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        ActivityLogger::created('Product', $product->id, "Created product '{$product->name}'");
 
         return redirect()
             ->route('products.index')

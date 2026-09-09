@@ -11,12 +11,13 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Purchase;
 use Exception;
+use PHPUnit\Framework\Attributes\Test;
 
 class PurchaseServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_creates_purchase_calculates_totals_server_side_and_increments_stock()
     {
         // 1. Initial Setup: Create User, Category, Product, Supplier
@@ -35,12 +36,12 @@ class PurchaseServiceTest extends TestCase
             'category_id' => $category->id,
             'name' => 'HP ProBook 450',
             'sku' => 'HP-PB450-001',
-            'purchase_price' => 85000,
+            'cost_price' => 85000,
             'selling_price' => 95000,
             'stock_quantity' => 10, // Initial Stock = 10
             'unit' => 'pcs',
-            'reorder_level' => 3,
-            'status' => 'active',
+            'low_stock_threshold' => 3,
+            'is_active' => true,
         ]);
 
         $supplier = Supplier::create([
@@ -71,7 +72,8 @@ class PurchaseServiceTest extends TestCase
         ];
 
         // 3. Execute Service Method
-        $service = new PurchaseService();
+        $this->actingAs($user);
+        $service = app(PurchaseService::class);
         $purchase = $service->createPurchase($data, $items);
 
         // 4. Assertions
@@ -98,7 +100,7 @@ class PurchaseServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_rolls_back_transaction_if_an_error_occurs()
     {
         $user = User::create([
@@ -121,12 +123,12 @@ class PurchaseServiceTest extends TestCase
             'category_id' => $category->id,
             'name' => 'Monitor',
             'sku' => 'MON-001',
-            'purchase_price' => 20000,
+            'cost_price' => 20000,
             'selling_price' => 25000,
             'stock_quantity' => 5,
             'unit' => 'pcs',
-            'reorder_level' => 1,
-            'status' => 'active',
+            'low_stock_threshold' => 1,
+            'is_active' => true,
         ]);
 
         $data = [
@@ -147,7 +149,8 @@ class PurchaseServiceTest extends TestCase
             ],
         ];
 
-        $service = new PurchaseService();
+        $this->actingAs($user);
+        $service = app(PurchaseService::class);
 
         try {
             $service->createPurchase($data, $items);

@@ -8,14 +8,16 @@ use App\Models\User;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
-use App\Models\Purchases;
+use App\Models\Purchase;
 use App\Models\PurchaseItem;
+
+use PHPUnit\Framework\Attributes\Test;
 
 class PurchaseChainRelationshipTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_tests_the_full_relationship_chain_with_user_dataset()
     {
         // 1. Electronics Category & Laptops Subcategory
@@ -35,12 +37,12 @@ class PurchaseChainRelationshipTest extends TestCase
             'category_id' => $electronics->id,
             'name' => 'HP ProBook 450',
             'sku' => 'HP-PB450-001',
-            'purchase_price' => 85000,
+            'cost_price' => 85000,
             'selling_price' => 95000,
             'stock_quantity' => 10,
             'unit' => 'pcs',
-            'reorder_level' => 3,
-            'status' => 'active',
+            'low_stock_threshold' => 3,
+            'is_active' => true,
         ]);
 
         // 3. User & Supplier
@@ -59,7 +61,7 @@ class PurchaseChainRelationshipTest extends TestCase
         ]);
 
         // 4. Purchase: ABC-INV-001
-        $purchase = Purchases::create([
+        $purchase = Purchase::create([
             'supplier_id' => $supplier->id,
             'user_id' => $user->id,
             'purchase_date' => now()->toDateString(),
@@ -90,8 +92,8 @@ class PurchaseChainRelationshipTest extends TestCase
         $this->assertEquals('Ali Manager', $purchase->user->name);
 
         // Purchase -> PurchaseItems
-        $this->assertCount(1, $purchase->purchaseItems);
-        $this->assertEquals(425000, $purchase->purchaseItems->first()->subtotal);
+        $this->assertCount(1, $purchase->items);
+        $this->assertEquals(425000, $purchase->items->first()->subtotal);
 
         // PurchaseItem -> Product
         $this->assertEquals('HP ProBook 450', $item->product->name);

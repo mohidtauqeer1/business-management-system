@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,7 +34,9 @@ class CategoryController extends Controller
             'parent_id' => ['nullable', 'exists:categories,id'],
         ]);
 
-        Category::create($validated);
+        $category = Category::create($validated);
+
+        ActivityLogger::created('Category', $category->id, "Created category '{$category->name}'");
 
         return redirect()
             ->route('categories.index')
