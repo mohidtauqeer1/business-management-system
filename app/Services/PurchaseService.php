@@ -18,9 +18,7 @@ class PurchaseService
         return DB::transaction(function () use ($data, $items) {
 
             if (empty($items)) {
-                throw new \InvalidArgumentException(
-                    'A purchase must contain at least one item.'
-                );
+                throw new \InvalidArgumentException('A purchase must contain at least one item.');
             }
 
             $calculatedTotal = 0;
@@ -46,9 +44,7 @@ class PurchaseService
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
             if ($paidAmount > $calculatedTotal) {
-                throw new \InvalidArgumentException(
-                    'Paid amount cannot be greater than the purchase total.'
-                );
+                throw new \InvalidArgumentException('Paid amount cannot be greater than the purchase total.');
             }
 
             // 3. Determine payment status
@@ -83,6 +79,15 @@ class PurchaseService
                     'Stock received from purchase.'
                 );
             }
+
+            // 6. Log activity
+            ActivityLogger::created(
+                'Purchase',
+                $purchase->id,
+                "Purchase {$purchase->invoice_number} from " .
+                ($purchase->supplier?->name ?? 'Unknown') .
+                " — Rs. " . number_format($calculatedTotal, 0)
+            );
 
             return $purchase->load(['supplier', 'user', 'items.product']);
         });

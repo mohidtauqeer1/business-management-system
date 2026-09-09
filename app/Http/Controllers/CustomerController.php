@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,33 +41,21 @@ class CustomerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-            ],
-
-            'email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
-
-            'address' => [
-                'nullable',
-                'string',
-            ],
+            'name'                 => ['required', 'string', 'max:255'],
+            'phone'                => ['nullable', 'string', 'max:20'],
+            'email'                => ['nullable', 'email', 'max:255'],
+            'address'              => ['nullable', 'string'],
+            'credit_limit'         => ['nullable', 'numeric', 'min:0'],
+            'credit_limit_enabled' => ['nullable', 'boolean'],
         ]);
 
-        $validated['credit_balance'] = 0;
+        $validated['credit_balance']        = 0;
+        $validated['credit_limit']          = $validated['credit_limit'] ?? 0;
+        $validated['credit_limit_enabled']  = $request->boolean('credit_limit_enabled');
 
-        Customer::create($validated);
+        $customer = Customer::create($validated);
+
+        ActivityLogger::created('Customer', $customer->id, "Customer '{$customer->name}' created");
 
         return redirect()
             ->route('customers.index')
@@ -94,31 +83,26 @@ class CustomerController extends Controller
         Customer $customer
     ): RedirectResponse {
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-            ],
-
-            'email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
-
-            'address' => [
-                'nullable',
-                'string',
-            ],
+            'name'                 => ['required', 'string', 'max:255'],
+            'phone'                => ['nullable', 'string', 'max:20'],
+            'email'                => ['nullable', 'email', 'max:255'],
+            'address'              => ['nullable', 'string'],
+            'credit_limit'         => ['nullable', 'numeric', 'min:0'],
+            'credit_limit_enabled' => ['nullable', 'boolean'],
         ]);
 
+        $validated['credit_limit']         = $validated['credit_limit'] ?? 0;
+        $validated['credit_limit_enabled'] = $request->boolean('credit_limit_enabled');
+
+        $old = $customer->only(['name', 'credit_limit', 'credit_limit_enabled']);
         $customer->update($validated);
+
+        ActivityLogger::updated(
+            'Customer', $customer->id,
+            "Customer '{$customer->name}' updated",
+            $old,
+            $customer->fresh()->only(['name', 'credit_limit', 'credit_limit_enabled'])
+        );
 
         return redirect()
             ->route('customers.index')

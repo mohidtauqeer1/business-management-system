@@ -35,39 +35,41 @@
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;max-width:900px;">
 
     <div class="card">
-        <div class="card-header"><span class="card-title">Profit & Loss Summary</span></div>
+        <div class="card-header"><span class="card-title">Profit & Loss Statement</span></div>
         <div class="card-body" style="padding:0;">
             <table class="table">
                 <tr>
                     <td style="padding:14px 20px;">Total Revenue</td>
-                    <td class="text-right fw-semibold" style="padding:14px 20px;">
-                        Rs. {{ number_format($summary['totalRevenue'], 0) }}
-                    </td>
+                    <td class="text-right fw-semibold" style="padding:14px 20px;">Rs. {{ number_format($summary['totalRevenue'], 0) }}</td>
                 </tr>
                 <tr>
                     <td style="padding:14px 20px;" class="text-danger">Less: Discounts</td>
-                    <td class="text-right text-danger" style="padding:14px 20px;">
-                        -Rs. {{ number_format($summary['totalDiscounts'], 0) }}
-                    </td>
+                    <td class="text-right text-danger" style="padding:14px 20px;">-Rs. {{ number_format($summary['totalDiscounts'], 0) }}</td>
                 </tr>
                 <tr style="background:var(--gray-50);">
                     <td style="padding:14px 20px;" class="fw-semibold">Net Revenue</td>
-                    <td class="text-right fw-semibold" style="padding:14px 20px;">
-                        Rs. {{ number_format($summary['netRevenue'], 0) }}
-                    </td>
+                    <td class="text-right fw-semibold" style="padding:14px 20px;">Rs. {{ number_format($summary['netRevenue'], 0) }}</td>
                 </tr>
                 <tr>
                     <td style="padding:14px 20px;" class="text-danger">Less: COGS</td>
-                    <td class="text-right text-danger" style="padding:14px 20px;">
-                        -Rs. {{ number_format($summary['cogs'], 0) }}
-                    </td>
+                    <td class="text-right text-danger" style="padding:14px 20px;">-Rs. {{ number_format($summary['cogs'], 0) }}</td>
                 </tr>
                 <tr style="background:{{ $summary['grossProfit'] >= 0 ? 'var(--success-light)' : 'var(--danger-light)' }};">
-                    <td style="padding:16px 20px;font-size:16px;font-weight:800;">
-                        {{ $summary['grossProfit'] >= 0 ? '✅ Gross Profit' : '❌ Gross Loss' }}
-                    </td>
-                    <td class="text-right" style="padding:16px 20px;font-size:16px;font-weight:800;color:{{ $summary['grossProfit'] >= 0 ? 'var(--success-dark)' : 'var(--danger-dark)' }};">
+                    <td style="padding:14px 20px;font-weight:700;">{{ $summary['grossProfit'] >= 0 ? '✅' : '❌' }} Gross Profit</td>
+                    <td class="text-right fw-bold" style="padding:14px 20px;color:{{ $summary['grossProfit'] >= 0 ? 'var(--success-dark)' : 'var(--danger-dark)' }};">
                         Rs. {{ number_format(abs($summary['grossProfit']), 0) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:14px 20px;" class="text-danger">Less: Operating Expenses</td>
+                    <td class="text-right text-danger" style="padding:14px 20px;">-Rs. {{ number_format($summary['totalExpenses'], 0) }}</td>
+                </tr>
+                <tr style="background:{{ $summary['netProfit'] >= 0 ? 'var(--success-light)' : 'var(--danger-light)' }};border-top:2px solid {{ $summary['netProfit'] >= 0 ? 'var(--success)' : 'var(--danger)' }};">
+                    <td style="padding:18px 20px;font-size:16px;font-weight:800;">
+                        {{ $summary['netProfit'] >= 0 ? '📊 Net Profit' : '📉 Net Loss' }}
+                    </td>
+                    <td class="text-right" style="padding:18px 20px;font-size:16px;font-weight:900;color:{{ $summary['netProfit'] >= 0 ? 'var(--success-dark)' : 'var(--danger-dark)' }};">
+                        {{ $summary['netProfit'] < 0 ? '-' : '' }}Rs. {{ number_format(abs($summary['netProfit']), 0) }}
                     </td>
                 </tr>
             </table>
@@ -77,23 +79,27 @@
     <div class="card">
         <div class="card-header"><span class="card-title">Key Metrics</span></div>
         <div class="card-body">
-            <div style="display:flex;flex-direction:column;gap:16px;">
-                <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:8px;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="text-align:center;padding:16px;background:var(--gray-50);border-radius:8px;">
                     <div class="stat-label">Gross Margin</div>
-                    <div style="font-size:42px;font-weight:800;color:{{ $summary['grossMargin'] >= 0 ? 'var(--success)' : 'var(--danger)' }};">
+                    <div style="font-size:38px;font-weight:800;color:{{ $summary['grossMargin'] >= 0 ? 'var(--success)' : 'var(--danger)' }};">
                         {{ number_format($summary['grossMargin'], 1) }}%
                     </div>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div style="text-align:center;padding:12px;background:var(--primary-light);border-radius:8px;">
-                        <div class="stat-label">Total Invoices</div>
-                        <div style="font-size:24px;font-weight:800;color:var(--primary-dark);">{{ $sales->count() }}</div>
+                <div style="text-align:center;padding:16px;background:{{ $summary['netMargin'] >= 0 ? 'var(--success-light)' : 'var(--danger-light)' }};border-radius:8px;">
+                    <div class="stat-label">Net Margin</div>
+                    <div style="font-size:38px;font-weight:800;color:{{ $summary['netMargin'] >= 0 ? 'var(--success-dark)' : 'var(--danger-dark)' }};">
+                        {{ number_format($summary['netMargin'], 1) }}%
                     </div>
-                    <div style="text-align:center;padding:12px;background:var(--success-light);border-radius:8px;">
-                        <div class="stat-label">Avg Sale Value</div>
-                        <div style="font-size:20px;font-weight:800;color:var(--success-dark);">
-                            Rs. {{ $sales->count() ? number_format($summary['totalRevenue'] / $sales->count(), 0) : '0' }}
-                        </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="text-align:center;padding:10px;background:var(--primary-light);border-radius:8px;">
+                        <div class="stat-label">Invoices</div>
+                        <div style="font-size:22px;font-weight:800;color:var(--primary-dark);">{{ $sales->count() }}</div>
+                    </div>
+                    <div style="text-align:center;padding:10px;background:var(--warning-light);border-radius:8px;">
+                        <div class="stat-label">Expenses</div>
+                        <div style="font-size:22px;font-weight:800;color:var(--warning-dark);">{{ $expensesInPeriod->count() }}</div>
                     </div>
                 </div>
             </div>
@@ -101,6 +107,37 @@
     </div>
 
 </div>
+
+{{-- Expenses Breakdown --}}
+@if($expensesInPeriod->isNotEmpty())
+<div class="card" style="margin-bottom:24px;max-width:900px;">
+    <div class="card-header">
+        <span class="card-title">💸 Operating Expenses Breakdown</span>
+        <span class="fw-bold text-danger">Rs. {{ number_format($summary['totalExpenses'], 0) }}</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead><tr><th>Category</th><th class="text-right">Amount</th><th>% of Total</th></tr></thead>
+            <tbody>
+                @foreach($expenseByCategory->sortDesc() as $cat => $amount)
+                @php $pct = $summary['totalExpenses'] > 0 ? ($amount / $summary['totalExpenses']) * 100 : 0; @endphp
+                <tr>
+                    <td class="fw-semibold">{{ \App\Models\Expense::categories()[$cat] ?? ucfirst($cat) }}</td>
+                    <td class="text-right text-danger fw-semibold">Rs. {{ number_format($amount, 0) }}</td>
+                    <td style="min-width:120px;">
+                        <div style="background:var(--gray-100);border-radius:999px;height:6px;overflow:hidden;">
+                            <div style="width:{{ $pct }}%;height:100%;background:var(--danger);border-radius:999px;"></div>
+                        </div>
+                        <span style="font-size:11px;color:var(--gray-400);">{{ number_format($pct, 1) }}%</span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 
 {{-- Daily Breakdown --}}
 @if($daily->count())

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Sale;
@@ -97,7 +98,7 @@ class ReportController extends Controller
         return view('reports.inventory', compact('products', 'summary', 'categories'));
     }
 
-    // ─── Profit Report ─────────────────────────────────────────────────────────
+    // ─── Profit Report ────────────────────────────────────────────────────────────
     public function profit(Request $request): View
     {
         $dateFrom = $request->date_from
@@ -113,9 +114,6 @@ class ReportController extends Controller
             ->whereBetween('sale_date', [$dateFrom, $dateTo])
             ->get();
 
-        // Purchases in period (cost of goods procured)
-        $purchases = Purchase::whereBetween('purchase_date', [$dateFrom, $dateTo])->get();
-
         $totalRevenue   = $sales->sum('total_amount');
         $totalDiscounts = $sales->sum('discount');
         $netRevenue     = $totalRevenue - $totalDiscounts;
@@ -128,8 +126,18 @@ class ReportController extends Controller
             }
         }
 
-        $grossProfit  = $netRevenue - $cogs;
-        $grossMargin  = $netRevenue > 0 ? ($grossProfit / $netRevenue) * 100 : 0;
+        $grossProfit = $netRevenue - $cogs;
+        $grossMargin = $netRevenue > 0 ? ($grossProfit / $netRevenue) * 100 : 0;
+
+        // ── Phase 2: Operating Expenses ──────────────────────────────────────
+        $expensesInPeriod = Expense::whereBetween('expense_date', [$dateFrom, $dateTo])->get();
+        $totalExpenses    = $expensesInPeriod->sum('amount');
+        $netProfit        = $grossProfit - $totalExpenses;
+        $netMargin        = $netRevenue > 0 ? ($netProfit / $netRevenue) * 100 : 0;
+
+        $expenseByCategory = $expensesInPeriod
+            ->groupBy('category')
+            ->map(fn($g) => $g->sum('amount'));
 
         $summary = compact(
             'totalRevenue',
@@ -137,19 +145,25 @@ class ReportController extends Controller
             'netRevenue',
             'cogs',
             'grossProfit',
-            'grossMargin'
+            'grossMargin',
+            'totalExpenses',
+            'netProfit',
+            'netMargin'
         );
 
         // Daily breakdown
         $daily = $sales->groupBy(fn($s) => $s->sale_date)
             ->map(fn($daySales) => [
-                'date'     => $daySales->first()->sale_date,
-                'revenue'  => $daySales->sum('total_amount'),
-                'count'    => $daySales->count(),
+                'date'    => $daySales->first()->sale_date,
+                'revenue' => $daySales->sum('total_amount'),
+                'count'   => $daySales->count(),
             ])
             ->sortByDesc('date')
             ->values();
 
-        return view('reports.profit', compact('summary', 'daily', 'sales', 'dateFrom', 'dateTo'));
+        return view('reports.profit', compact(
+            'summary', 'daily', 'sales', 'dateFrom', 'dateTo',
+            'expensesInPeriod', 'expenseByCategory'
+        ));
     }
 }

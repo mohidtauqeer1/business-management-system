@@ -20,6 +20,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\PurchaseReturnController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ActivityLogController;
 
 // ══════════════════════════════════════════════════════════════════
 // Authentication (Public)
@@ -155,6 +157,22 @@ Route::middleware('auth')->group(function () {
     // ── Purchases (Admin + Manager) ── PDF download ───────────────
     Route::middleware('role:admin,manager')->group(function () {
         Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'downloadPdf'])->name('purchases.pdf');
+    });
+
+    // ── Expenses (Admin + Manager) ────────────────────────────────
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('/expenses',              [ExpenseController::class, 'index'])   ->name('expenses.index');
+        Route::get('/expenses/create',       [ExpenseController::class, 'create'])  ->name('expenses.create');
+        Route::post('/expenses',             [ExpenseController::class, 'store'])   ->name('expenses.store');
+        Route::get('/expenses/{expense}',    [ExpenseController::class, 'show'])    ->name('expenses.show');
+        Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])  ->name('expenses.edit');
+        Route::put('/expenses/{expense}',    [ExpenseController::class, 'update'])  ->name('expenses.update');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']) ->name('expenses.destroy');
+    });
+
+    // ── Activity Log (Admin only) ─────────────────────────────────
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
 });

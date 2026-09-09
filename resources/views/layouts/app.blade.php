@@ -140,6 +140,12 @@
                 Payments
             </a>
 
+            <a href="{{ route('expenses.index') }}"
+               class="sidebar-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+                <span class="icon">💸</span>
+                Expenses
+            </a>
+
             <a href="{{ route('balances.suppliers') }}"
                class="sidebar-link {{ request()->routeIs('balances.suppliers') ? 'active' : '' }}">
                 <span class="icon">📋</span>
@@ -196,6 +202,12 @@
                class="sidebar-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                 <span class="icon">⚙️</span>
                 Settings
+            </a>
+
+            <a href="{{ route('activity-logs.index') }}"
+               class="sidebar-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
+                <span class="icon">📋</span>
+                Activity Log
             </a>
             @endif
 
